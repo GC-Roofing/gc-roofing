@@ -21,9 +21,16 @@ function APIMap() {
     const geocoderLibrary = useMapsLibrary('geocoding'); // library
     const map = useMap();
     const mapOptions = {
+        disableDefaultUI: true,
         scrollwheel: false,
         gestureHandling: 'cooperative', // Users can scroll normally, but must hold Ctrl to zoom the map
         zoomControl: true,
+        fullscreenControl: false,
+        streetViewControl:false,
+        mapTypeControl: true,
+        mapTypeControlOptions: {
+            mapTypeIds: [window.google?.maps?.MapTypeId?.ROADMAP, window.google?.maps?.MapTypeId?.HYBRID],
+        },
     };
 
     
@@ -79,6 +86,13 @@ function APIMap() {
             }
         }
     }, [map, geocodes]);
+
+    // update map type because statically it didn't work
+    useEffect(() => {
+        if (map) {
+            map.setMapTypeId('hybrid');
+        }
+    }, [map])
 
     return (
         <Box sx={{height:'100%', overflow:'scroll'}}>

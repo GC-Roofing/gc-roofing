@@ -146,11 +146,6 @@ const navTabs = [
                 key:'lead-roof-tech-aid',
                 to:'lead-roof-tech-aid',
             },
-            {
-                name:'Tutorials',
-                key:'tutorials',
-                to:'tutorials',
-            },
         ]
     },
     {
