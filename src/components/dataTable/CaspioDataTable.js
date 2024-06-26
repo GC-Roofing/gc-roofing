@@ -130,7 +130,7 @@ export default function CaspioDataTable({
         setInfo(data.Result);// set building info
         updateData && updateData(data.Result);
         setLoading(false); // finish loading
-    }, [caspioTokens, getTokens, url, labels]);
+    }, [caspioTokens, getTokens, url, labels, updateData]);
 
     // delay when to actually run the function
     // eslint-disable-next-line

@@ -1,4 +1,4 @@
-import {useState, useEffect, useCallback, memo, useMemo} from 'react';
+import {useState, useEffect, useCallback, memo} from 'react';
 import {APIProvider, Map, AdvancedMarker, useMapsLibrary, useMap} from '@vis.gl/react-google-maps';
 
 
@@ -59,18 +59,24 @@ function APIMap() {
                 });
             });
         }
-    }, [data])
+    }, [data, geocoderLibrary])
 
     // fit the map to the markers
     useEffect(() => {
         if (map) {
             const bounds = new window.google.maps.LatLngBounds();
             console.log(geocodes)
-            geocodes.forEach(marker => {
-                bounds.extend(marker);
-            });
+            if (geocodes.length !== 0) {
+                geocodes.forEach(marker => {
+                    bounds.extend(marker);
+                });
 
-            map.fitBounds(bounds);
+                map.fitBounds(bounds);
+            } else {
+                const center = {lat: 36.7378, lng: -119.7871}
+                map.setCenter(center);
+                map.setZoom(10);
+            }
         }
     }, [map, geocodes]);
 
