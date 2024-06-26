@@ -1,5 +1,5 @@
-import {useState, useEffect, useCallback, memo} from 'react';
-import {APIProvider, Map, AdvancedMarker} from '@vis.gl/react-google-maps';
+import {useState, useEffect, useCallback, memo, useMemo} from 'react';
+import {APIProvider, Map, AdvancedMarker, useMapsLibrary, useMap} from '@vis.gl/react-google-maps';
 
 
 import WorkOrderScheduling from './WorkOrderScheduling';
@@ -8,39 +8,86 @@ import Box from '@mui/material/Box';
 
 
 export default function WorkOrderSchedulingMap() {
+    return (
+        <APIProvider apiKey={'AIzaSyD_uVKlMkmGj4HIbA3cg6f4uKcv3R9pCos'}>
+            <APIMap />
+        </APIProvider>
+    );
+}
+
+function APIMap() {
     // init
-    const position = {lat: 53.54992, lng: 10.00678};
+    const fresno = {lat: 36.7378, lng: -119.7871}; // center on fresno
+    const geocoderLibrary = useMapsLibrary('geocoding'); // library
+    const map = useMap();
+    const mapOptions = {
+        scrollwheel: false,
+        gestureHandling: 'cooperative', // Users can scroll normally, but must hold Ctrl to zoom the map
+        zoomControl: true,
+    };
+
+    
 
     // state
-    const [data, setData] = useState();
+    const [data, setData] = useState(); // data to get from query
+    const [geocodes, setGeocodes] = useState([]); // for setting the geocodes
 
     // callbacks
     const updateData = useCallback((d) => setData(d), []);
 
     // updates
+    // sets up the markers based on the data
     useEffect(() => {
-        async function getGeocodes() {
-            const response = await fetch('https://maps.googleapis.com/maps/api/geocode/json?address=1600+Amphitheatre+Parkway,+Mountain+View,+CA&amp;key=AIzaSyDo0c8PILTfeDCIAfx2F7ek-FiQYepUgUU',{
-                method: 'GET',
+        if (geocoderLibrary !== null) {
+            const geocoder = new geocoderLibrary.Geocoder();
+
+            setGeocodes(prev => []);
+            data?.slice(0,10).forEach((v, i) => {
+                const gr = {
+                    address: v.Building_Address,
+                };
+
+                console.log('bye')
+                geocoder.geocode(gr, (results, status) => {
+                    if (status === 'OK') {
+                        const gs = results?.at(0).geometry.location;
+                        setGeocodes(prev => prev.concat(gs));
+                    } else {
+                        console.log(status);
+                    }
+                    
+                });
+            });
+        }
+    }, [data])
+
+    // fit the map to the markers
+    useEffect(() => {
+        if (map) {
+            const bounds = new window.google.maps.LatLngBounds();
+            console.log(geocodes)
+            geocodes.forEach(marker => {
+                bounds.extend(marker);
             });
 
-            console.log(response);
-            const data = await response.json();
-            console.log(data)
-
+            map.fitBounds(bounds);
         }
-
-        getGeocodes();
-    }, [data])
+    }, [map, geocodes]);
 
     return (
         <Box sx={{height:'100%', overflow:'scroll'}}>
-            <Box sx={{height:'50%'}}>
-                <APIProvider apiKey={'AIzaSyD_uVKlMkmGj4HIbA3cg6f4uKcv3R9pCos'}>
-                    <Map mapId='94b3e10296906c3b' defaultCenter={position} defaultZoom={10}>
-                        <AdvancedMarker position={position} />
-                    </Map>
-                </APIProvider>
+            <Box 
+                sx={{
+                    height:'75%',
+                    opacity:(data) ? 1 : 0,
+                    transition: 'opacity 1s ease',
+                }}
+                >
+                <Map mapId='94b3e10296906c3b' defaultCenter={fresno} defaultZoom={10} options={mapOptions}>
+                    {geocodes.map((v, i) => (
+                        <AdvancedMarker key={i} position={v} />
+                    ))}
+                </Map>
             </Box>
             <Box sx={{height:'100%', overflow:'scroll'}}>
                 <MemoWorkOrderScheduling updateData={updateData} />
