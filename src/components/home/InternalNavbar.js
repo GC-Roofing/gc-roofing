@@ -32,7 +32,7 @@ export default function InternalNavbar() {
             {/* Navbar for the homepage */}
             <Navbar 
                 tabs={navTabs} 
-                icon={<AccountMenu setUser={setUser} />} 
+                icon={<AccountMenu setUser={setUser} user={user} />} 
                 initial={currTabIndex}
                 menuInitial={currMenuIndex}
                 />

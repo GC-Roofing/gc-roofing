@@ -1,5 +1,5 @@
 import {useState, useEffect} from 'react';
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {auth} from '../../firebase';
 import { signInWithEmailAndPassword } from "firebase/auth";
 
@@ -38,7 +38,7 @@ export default function Login() {
         }, 5000);
 
         return () => clearInterval(interval);
-    }, [])
+    }, [images.length])
 
     // handle input changes
     function handleChange({target}) {
