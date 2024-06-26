@@ -5,7 +5,7 @@ import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 
 
-export default function WorkOrderScheduling() {
+export default function WorkOrderScheduling({updateData}) {
     const {caspioTokens, getTokens} = useAuth(); // get access tokens
 
     const ButtonLink = ({children, href}) => <Button size='small' sx={{textWrap:'wrap', display:href ? 'inline-block' : 'none', minWidth:0}} href={href}>{children}</Button>;
@@ -16,6 +16,10 @@ export default function WorkOrderScheduling() {
         getTokens: getTokens,
         title: 'Entity Companies',
         pk: 'WO_Number',
+        updateData: updateData,
+        initialOrderBy: 'Status',
+        initialOrderDirection: 'desc',
+        initialFilter: {key:'Status', value:'New'},
         labels: [
             {name:'Status', key:'Status'},
             {name:'Job Type', key:'Job_Type'},

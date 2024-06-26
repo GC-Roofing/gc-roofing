@@ -32,7 +32,12 @@ import Collapse from '@mui/material/Collapse';
 
 
 
-export default function CaspioDataTable({url, caspioTokens, getTokens, title, pk, labels, padding='4%'}) {
+export default function CaspioDataTable({
+        url, caspioTokens, getTokens, title, pk, 
+        updateData,
+        initialOrderBy, initialOrderDirection, initialFilter, 
+        labels, padding='4%'
+    }) {
     /*
         const tableInfo = {
             url: 'https://c1acl820.caspio.com/rest/v2/tables/C3_Contracts_Quote_Table_Request/records',
@@ -67,43 +72,44 @@ export default function CaspioDataTable({url, caspioTokens, getTokens, title, pk
     const [info, setInfo] = useState();  // state for building info
     const [pageSize, setPageSize] = useState(25); // state for number of rows on a page
     const [pageNum, setPageNum] = useState(1); // state for page number
-    const [orderBy, setOrderBy] = useState(labels[0].key); // state for order by //not being used
+    const [orderBy, setOrderBy] = useState(initialOrderBy||labels[0].key); // state for order by //not being used
     const [loading, setLoading] = useState(true); // check if still loading
     const [anchorEl, setAnchorEl] = useState(null); // anchor menu
     const [selectedRecord, setSelectedRecord] = useState(null); // which record is selected for the menu
-    const [orderDirection, setOrderDirection] = useState('asc'); // order direction
+    const [orderDirection, setOrderDirection] = useState(initialOrderDirection||'asc'); // order direction
     const [openDelete, setOpenDelete] = useState(false);
     const [openFilter, setOpenFilter] = useState(true);
-    const [filterText, setFilterText] = useState(labels.reduce((o, v) => ({...o, [v.key]: ''}), {}));
+    const [filterText, setFilterText] = useState(labels.reduce((o, v) => ({...o, [v.key]: (v.key===initialFilter?.key) ? initialFilter?.value : ''}), {}));
     const [debounced, setDebounced] = useState(false);
 
 
     // Callback functions
     // async function to get building info
     const getInfo = useCallback(async (pageNum, pageSize, orderBy, direction='asc', where={}) => {
+        // identify correct operator
         function queryOperator(l, op, obj, v) {
-            if (op === '=' && obj[v] !== '') {
+            if (op === '=') {
                 return ' = \'' + (l?.reverter?.call(undefined, obj[v])||obj[v]) + '\'';
-            } else if (obj[v] !== '') {
-                return ' like \'%' + (l?.reverter?.call(undefined, obj[v].replace(/ /g, '% %'))||obj[v].replace(/ /g, '% %')) + '%\'';
             } else {
-                return ' like \'%' + obj[v].replace(/ /g, '% %') + '%\'';
+                return ' like \'%' + (l?.reverter?.call(undefined, obj[v].replace(/ /g, '% %'))||obj[v].replace(/ /g, '% %')) + '%\'';
             }
         }
-        // const stringWhere = encodeURIComponent(Object.keys(where).reduce((o, v) => o + v + ' like \'%' + where[v].replace(/ /g, '% %') + '%\' AND ', '').slice(0, -5));
+
+        // create filter query string
         const stringWhere = encodeURIComponent(Object.keys(where).reduce((o, v, i, a) => {
             const l = labels.filter((l) => l.key === v)[0];
-            let retV;
+            let retV = '';
             if (where[v] !== '') {
-                retV = (o + v + queryOperator(l, l?.comparator||'like', where, v) + ' AND ');
-            } else if (a.length - 1 === i) {
-                retV = ' AND ';
+                retV = v + queryOperator(l, l?.comparator||'like', where, v);
+                retV = retV + (((a.length-1)!==i) ? ' AND ' : '');
             }
 
-            return retV;
-        }, '').slice(0, -5));
-        let query = `?q.orderBy=${orderBy}%20${direction}&q.pageNumber=${pageNum}&q.pageSize=${pageSize}&q.where=${stringWhere}`; // query
 
+            return o + retV;
+        }, '').slice(0, -5));
+
+
+        let query = `?q.orderBy=${orderBy}%20${direction}&q.pageNumber=${pageNum}&q.pageSize=${pageSize}&q.where=${stringWhere}`; // query
         // and look at swagger ui for request url
         // get response
         const response = await fetch(url+query, {
@@ -122,6 +128,7 @@ export default function CaspioDataTable({url, caspioTokens, getTokens, title, pk
         // get data
         const data = await response.json();
         setInfo(data.Result);// set building info
+        updateData && updateData(data.Result);
         setLoading(false); // finish loading
     }, [caspioTokens, getTokens, url, labels]);
 

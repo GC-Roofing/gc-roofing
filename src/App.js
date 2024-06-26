@@ -22,7 +22,7 @@ import QuotesContractsContracts from './components/customer/QuotesContractsContr
 import HistoricalWarranties from './components/customer/HistoricalWarranties';
 import QuotesContractsCreateQuote from './components/customer/QuotesContractsCreateQuote';
 import QuotesContractsInputEstimate from './components/customer/QuotesContractsInputEstimate';
-import WorkOrderScheduling from './components/workOrders/WorkOrderScheduling';
+import WorkOrderSchedulingMap from './components/workOrders/WorkOrderSchedulingMap';
 import WorkOrderOverview from './components/workOrders/WorkOrderOverview';
 import InvoicingSidebar from './components/workOrders/InvoicingSidebar';
 import WorkOrderInvoicingLeakRepair from './components/workOrders/WorkOrderInvoicingLeakRepair';
@@ -170,7 +170,7 @@ function App() {
                                 },
                                 {
                                     path:'scheduling',
-                                    element:<WorkOrderScheduling />,
+                                    element:<WorkOrderSchedulingMap />,
                                 },
                                 {
                                     path:'invoicing',
