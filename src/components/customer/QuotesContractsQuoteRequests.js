@@ -1,17 +1,12 @@
-import {useAuth} from '../../AuthContext';
-import CaspioDataTable from '../dataTable/CaspioDataTable';
+import FirestoreDataTable from '../dataTable/FirestoreDataTable';
 
 
 
 export default function QuotesContractsQuoteRequests() {
-    const {caspioTokens, getTokens} = useAuth(); // get access tokens
 
     const tableInfo = {
-        url: 'https://c1acl820.caspio.com/rest/v2/tables/C3_Contracts_Quote_Table_Request/records',
-        caspioTokens: caspioTokens,
-        getTokens: getTokens,
+        collectionName: 'C3_Contracts_Quote_Table_Request',
         title: 'Quote Requests',
-        pk: 'Quote_ID',
         labels: [
             {name:'Assigned', key:'Assigned_Estimator'},
             {name:'Source', key:'Quote_Source'},
@@ -47,7 +42,7 @@ export default function QuotesContractsQuoteRequests() {
 
     return (
         <>
-            <CaspioDataTable {...tableInfo} />
+            <FirestoreDataTable {...tableInfo} />
         </>
     );
 }

@@ -1,21 +1,26 @@
-import {useAuth} from '../../AuthContext';
-import CaspioDataTable from '../dataTable/CaspioDataTable';
+import FirestoreDataTable from '../dataTable/FirestoreDataTable';
 
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 
 
 export default function WorkOrderInvoicingContractExtensiveRepair() {
-    const {caspioTokens, getTokens} = useAuth(); // get access tokens
 
-    const ButtonLink = ({children, href}) => <Button size='small' sx={{textWrap:'wrap', display:href ? 'inline-block' : 'none', minWidth:0}} href={href}>{children}</Button>;
+    const ButtonLink = ({children, href}) => (
+        <Button 
+            size='small' 
+            sx={{textWrap:'wrap', display:href ? 'inline-block' : 'none', minWidth:0}} 
+            href={href} 
+            target = "_blank" 
+            rel = "noopener noreferrer"
+            >
+            {children}
+        </Button>
+    );
 
     const tableInfo = {
-        url: 'https://c1acl820.caspio.com/rest/v2/tables/C2_Contracts_Table/records',
-        caspioTokens: caspioTokens,
-        getTokens: getTokens,
+        collectionName: 'C2_Contracts_Table',
         title: 'Contract & Extensive Repair Invoicing Report',
-        pk: 'Contract_ID',
         labels: [
             {
                 name:'Contract Date', key:'Contract_Date', hideSearch:true,
@@ -51,15 +56,15 @@ export default function WorkOrderInvoicingContractExtensiveRepair() {
             {name:'WO ID', key:'WO_NewJob'},
             {
                 name:'Dropbox', key:'Dropbox_Link', hideSearch:true,
-                converter:(v) => <ButtonLink href={v}>Dropbox Link</ButtonLink>,
+                renderer:(v) => <ButtonLink href={v}>Dropbox Link</ButtonLink>,
             },
             {
                 name:'CompanyCam', key:'Company_Cam', hideSearch:true,
-                converter:(v) => <ButtonLink href={v}>CompanyCam Link</ButtonLink>,
+                renderer:(v) => <ButtonLink href={v}>CompanyCam Link</ButtonLink>,
             },
             {
                 name:'PDF', key:'Drive_Link', hideSearch:true,
-                converter:(v) => <ButtonLink href={v}>View Contract</ButtonLink>,
+                renderer:(v) => <ButtonLink href={v}>View Contract</ButtonLink>,
             },
             
 
@@ -69,7 +74,7 @@ export default function WorkOrderInvoicingContractExtensiveRepair() {
     return (
         <>
             <Box sx={{mx:'1%', overflow:'scroll', height:'100%'}}>
-                <CaspioDataTable {...tableInfo} />
+                <FirestoreDataTable {...tableInfo} />
             </Box>
         </>
     );

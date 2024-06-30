@@ -1,17 +1,12 @@
-import {useAuth} from '../../AuthContext';
-import CaspioDataTable from '../dataTable/CaspioDataTable';
+import FirestoreDataTable from '../dataTable/FirestoreDataTable';
 
 
 
 export default function CusomterOverviewPropertyGroups() {
-    const {caspioTokens, getTokens} = useAuth(); // get access tokens
 
     const tableInfo = {
-        url: 'https://c1acl820.caspio.com/rest/v2/tables/A4_Property_IDs/records',
-        caspioTokens: caspioTokens,
-        getTokens: getTokens,
+        collectionName: 'A4_Property_IDs',
         title: 'Property Groups & IDs',
-        pk: 'Property_ID',
         labels: [
             {name:'Group ID', key:'Property_ID'},
             {name:'Property Name', key:'Property_Name'},
@@ -23,10 +18,9 @@ export default function CusomterOverviewPropertyGroups() {
             {name:'Property Zip', key:'Property_Zip'},
         ]
     }
-
     return (
         <>
-            <CaspioDataTable {...tableInfo} />
+            <FirestoreDataTable {...tableInfo} />
         </>
     );
 }

@@ -1,17 +1,12 @@
-import {useAuth} from '../../AuthContext';
-import CaspioDataTable from '../dataTable/CaspioDataTable';
+import FirestoreDataTable from '../dataTable/FirestoreDataTable';
 
 
 
 export default function CustomerOverviewEntityCompanies() {
-    const {caspioTokens, getTokens} = useAuth(); // get access tokens
 
     const tableInfo = {
-        url: 'https://c1acl820.caspio.com/rest/v2/tables/A3_Entity_Information/records',
-        caspioTokens: caspioTokens,
-        getTokens: getTokens,
+        collectionName: 'A3_Entity_Information',
         title: 'Entity Companies',
-        pk: 'Entity_ID',
         labels: [
             {
                 name:'Created', key:'Created_Date',
@@ -36,7 +31,7 @@ export default function CustomerOverviewEntityCompanies() {
 
     return (
         <>
-            <CaspioDataTable {...tableInfo} />
+            <FirestoreDataTable {...tableInfo} />
         </>
     );
 }

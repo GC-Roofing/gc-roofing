@@ -166,6 +166,7 @@ export default function Navbar({tabs, icon, initial, menuInitial}) {
                     >
                     {tabs[currMenu]?.menu.map((v, i) => (
                         <MenuItem
+                            key={i}
                             selected={i === menuInitial && tabs[initial] === tabs[currMenu]} // selected if current tab and menu item is selected
                             component={Link} 
                             to={v.href ? v.href : tabs[currMenu].to + '/' + v.to }

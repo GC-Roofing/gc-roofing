@@ -1,17 +1,12 @@
-import {useAuth} from '../../AuthContext';
-import CaspioDataTable from '../dataTable/CaspioDataTable';
+import FirestoreDataTable from '../dataTable/FirestoreDataTable';
 
 
 
 export default function CustomerOverviewPropertyManagers() {
-    const {caspioTokens, getTokens} = useAuth(); // get access tokens
 
     const tableInfo = {
-        url: 'https://c1acl820.caspio.com/rest/v2/tables/A2_Property_Managers/records',
-        caspioTokens: caspioTokens,
-        getTokens: getTokens,
+        collectionName: 'A2_Property_Managers',
         title: 'Property Management Companies',
-        pk: 'Management_ID',
         labels: [
             {
                 name:'Created', key:'Created_Date',
@@ -34,7 +29,7 @@ export default function CustomerOverviewPropertyManagers() {
 
     return (
         <>
-            <CaspioDataTable {...tableInfo} />
+            <FirestoreDataTable {...tableInfo} />
         </>
     );
 }

@@ -5,9 +5,19 @@ import Button from '@mui/material/Button';
 
 
 export default function WorkOrderInvoicingLeakRepair() {
-    const {caspioTokens, getTokens} = useAuth(); // get access tokens
+    const [caspioTokens, getTokens] = useAuth();
 
-    const ButtonLink = ({children, href}) => <Button size='small' sx={{textWrap:'wrap', display:href ? 'inline-block' : 'none', minWidth:0}} href={href}>{children}</Button>;
+    const ButtonLink = ({children, href}) => (
+        <Button 
+            size='small' 
+            sx={{textWrap:'wrap', display:href ? 'inline-block' : 'none', minWidth:0}} 
+            href={href} 
+            target = "_blank" 
+            rel = "noopener noreferrer"
+            >
+            {children}
+        </Button>
+    );
 
     const tableInfo = {
         url: 'https://c1acl820.caspio.com/rest/v2/views/Invoicing_View/records',
@@ -51,7 +61,7 @@ export default function WorkOrderInvoicingLeakRepair() {
             {name:'Work Order #', key:'WO1_Work_Order_Details_WO_Number'},
             {
                 name:'Dropbox', key:'E3_All_Invoicing_Invoice_Link_to_View', hideSearch:true,
-                converter:(v) => <ButtonLink href={v}>View Invoice</ButtonLink>,
+                renderer:(v) => <ButtonLink href={v}>View Invoice</ButtonLink>,
             },
             {
                 name:'Created QB', key:'E3_All_Invoicing_Invoice_Ready_QB', comparator:'=',

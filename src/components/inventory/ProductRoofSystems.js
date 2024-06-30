@@ -1,18 +1,13 @@
-import {useAuth} from '../../AuthContext';
-import CaspioDataTable from '../dataTable/CaspioDataTable';
+import FirestoreDataTable from '../dataTable/FirestoreDataTable';
 
 
 
 export default function ProductRoofSystems() {
-    const {caspioTokens, getTokens} = useAuth(); // get access tokens
 
 
     const tableInfo = {
-        url: 'https://c1acl820.caspio.com/rest/v2/tables/L2_Products_Table/records',
-        caspioTokens: caspioTokens,
-        getTokens: getTokens,
+        collectionName: 'L2_Products_Table',
         title: 'Roof Systems',
-        pk: 'roofsystemID',
         labels: [
             {name:'Product Name', key:'ProductName'},
             {name:'Roof System', key:'roofsystem'},
@@ -24,7 +19,7 @@ export default function ProductRoofSystems() {
 
     return (
         <>
-            <CaspioDataTable {...tableInfo} />
+            <FirestoreDataTable {...tableInfo} />
         </>
     );
 }

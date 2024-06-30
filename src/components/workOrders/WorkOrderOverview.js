@@ -1,21 +1,26 @@
-import {useAuth} from '../../AuthContext';
-import CaspioDataTable from '../dataTable/CaspioDataTable';
+import FirestoreDataTable from '../dataTable/FirestoreDataTable';
 
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 
 
 export default function WorkOrderOverview() {
-    const {caspioTokens, getTokens} = useAuth(); // get access tokens
 
-    const ButtonLink = ({children, href}) => <Button size='small' sx={{textWrap:'wrap', display:href ? 'inline-block' : 'none', minWidth:0}} href={href}>{children}</Button>;
+    const ButtonLink = ({children, href}) => (
+        <Button 
+            size='small' 
+            sx={{textWrap:'wrap', display:href ? 'inline-block' : 'none', minWidth:0}} 
+            href={href} 
+            target = "_blank" 
+            rel = "noopener noreferrer"
+            >
+            {children}
+        </Button>
+    );
 
     const tableInfo = {
-        url: 'https://c1acl820.caspio.com/rest/v2/tables/WO1_Work_Order_Details/records',
-        caspioTokens: caspioTokens,
-        getTokens: getTokens,
+        collectionName: 'WO1_Work_Order_Details',
         title: 'Entity Companies',
-        pk: 'WO_Number',
         labels: [
             {name:'Lead Tech', key:'Roof_Tech_Assigned_1'},
             {name:'Property Name', key:'Property_Name'},
@@ -38,7 +43,7 @@ export default function WorkOrderOverview() {
             {name:'Work Order #', key:'WO_Number'},
             {
                 name:'CompanyCam', key:'Company_Cam', hideSearch:true,
-                converter:(v) => <ButtonLink href={v}>Link</ButtonLink>,
+                renderer:(v) => <ButtonLink href={v}>Link</ButtonLink>,
             },
         ]
     }
@@ -46,7 +51,7 @@ export default function WorkOrderOverview() {
     return (
         <>
             <Box sx={{mx:'1%', overflow:'scroll', height:'100%'}}>
-                <CaspioDataTable {...tableInfo} />
+                <FirestoreDataTable {...tableInfo} />
             </Box>
         </>
     );

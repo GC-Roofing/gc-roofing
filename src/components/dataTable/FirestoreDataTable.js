@@ -1,4 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
+import { getDocs, query, collection } from "firebase/firestore"; 
+
+import {firestore} from '../../firebase';
+
 
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -32,129 +36,125 @@ import Collapse from '@mui/material/Collapse';
 
 
 
-export default function CaspioDataTable({
-        url, caspioTokens, getTokens, title, pk, 
-        updateData, dataFunc,
-        initialOrderBy, initialOrderDirection, initialFilter, groupBy=[],
-        labels, padding='4%'
+export default function FirestoreDataTable({
+        title, collectionName, labels,
+        updateData=null, dataFunc=null,
+        initialOrderObj=null, initialOrderDirection='asc', initialFilter=null, groupBy=[],
+        padding='4%'
     }) {
     /*
         const tableInfo = {
-            url: 'https://c1acl820.caspio.com/rest/v2/tables/C3_Contracts_Quote_Table_Request/records',
-            caspioTokens: caspioTokens,
-            getTokens: getTokens,
-            title: 'Quote Requests',
-            pk: 'Quote_ID',
+            title: 'Stop Priority',
+            collectionName: collectionName,
             labels: [
-                {name:'Assigned', key:'Assigned_Estimator'},
-                {name:'Source', key:'Quote_Source'},
-                {name:'Property Type', key:'Quote_Type'},
-                {name:'Proposal Type', key:'Proposal_Type'},
-                {name:'QO Date', key:'Todays_Date'},
-                {name:'Quote ID', key:'Quote_ID'},
-                {name:'Related WO', key:'Work_Order_Number_Related'},
-                {name:'Property', key:'Property_Name'},
+                {
+                    name:'Start Date', key:'Start_Date',
+                    converter: (v) => {
+                        if (v) {
+                            const date = new Date(v);
+                            return (date.getMonth()+1) + '/' + date.getDate() + '/' + date.getFullYear();
+                        }
+                    },
+                    reverter: (v) => v.replaceAll('/', ' '),
+                },
+                {name:'Lead Tech', key:'Roof_Tech_Assigned_1'},
+                {name:'Stop #', key:'Stop_Priority'},
+                {name:'WO Number', key:'WO_Number'},
+                {name:'Job Type', key:'Job_Type'},
+                {name:'Management Company', key:'Management_Name'},
+                {name:'Property Name', key:'Property_Name'},
                 {name:'Building Range', key:'Building_Range'},
-                {
-                    name:'Completed', key:'Quote_Completed', comparator:'=',
-                    converter: (v) => v ? 'yes' : 'no', 
-                    reverter: (v) => v === 'yes' ? 'true' : (v === 'no') ? 'false' : ''
-                },
-                {
-                    name:'Closed', key:'Quote_Closed', comparator:'=',
-                    converter: (v) => v ? 'yes' : 'no', 
-                    reverter: (v) => v === 'yes' ? 'true' : (v === 'no') ? 'false' : 'fail'
-                },
-                {name:'Days Pending', key:'Pending_Days'},
+                {name:'Navigation Address', key:'Full_Address'},
+                {name:'Labor Hours', key:'Est_Labor_hours'},
+                {name:'Status', key:'Status'},
             ]
         }
     */
-    const [info, setInfo] = useState();  // state for building info
+    const [info, setInfo] = useState([]);  // state for building info
+    const [infoSlice, setInfoSlice] = useState([]);
+    const [filteredLength, setFilteredLength] = useState(0);
     const [pageSize, setPageSize] = useState(25); // state for number of rows on a page
     const [pageNum, setPageNum] = useState(1); // state for page number
-    const [orderBy, setOrderBy] = useState(initialOrderBy||labels[0].key); // state for order by //not being used
+    // const [pageNumObj, setPageNumObj] = useState(null);
+    // const [pageLimitObj, setPageLimitObj] = useState(limit(pageSize));
+    const [orderObj, setOrderObj] = useState(initialOrderObj||labels[0].key); // state for order by //not being used
     const [loading, setLoading] = useState(true); // check if still loading
     const [anchorEl, setAnchorEl] = useState(null); // anchor menu
     const [selectedRecord, setSelectedRecord] = useState(null); // which record is selected for the menu
-    const [orderDirection, setOrderDirection] = useState(initialOrderDirection||'asc'); // order direction
+    const [orderDirection, setOrderDirection] = useState(initialOrderDirection); // order direction
     const [openDelete, setOpenDelete] = useState(false);
     const [openFilter, setOpenFilter] = useState(true);
     const [filterText, setFilterText] = useState(labels.reduce((o, v) => ({...o, [v.key]: (v.key===initialFilter?.key) ? initialFilter?.value : ''}), {}));
     const [debounced, setDebounced] = useState(false);
 
-
     // Callback functions
     // async function to get building info
-    const getInfo = useCallback(async (pageNum, pageSize, orderBy, direction='asc', where={}) => {
-        // identify correct operator
-        function queryOperator(l, op, obj, v) {
-            if (op === '=') {
-                return ' = \'' + (l?.reverter?.call(undefined, obj[v])||obj[v]) + '\'';
-            } else {
-                return ' like \'%' + (l?.reverter?.call(undefined, obj[v].replace(/ /g, '% %'))||obj[v].replace(/ /g, '% %')) + '%\'';
-            }
+    const getInfo = useCallback(async (updateLoading, updateInfo,) => {
+        // get info
+        const collectionRef = collection(firestore, collectionName);
+        const querySnapshot = query(collectionRef);
+        const docSnapshot = await getDocs(querySnapshot);
+
+        let results = docSnapshot.docs;
+        if (dataFunc) {
+            results = dataFunc(results);
+        }
+        // const sortedResults = results.sort(getComparator(direction, orderObj));
+        // set data
+        updateInfo(info => results);// set building info
+        // await updatePageNumObj(sortedResults.slice(0, pageSize))
+        updateLoading(false); // finish loading
+    }, [collectionName, dataFunc]);
+
+    // async function for filtering and sorting
+    const filteredInfo = useCallback(async (pageNum, pageSize, orderObj, orderDirection, filterText, info, debounced) => {
+        let filteredResults = info;
+        // filter if text has been inputted into filter
+        if (Object.values(filterText).some(x => x !== '')) {
+            filteredResults = info.filter((vf, i) => {// filter out the values that do not satisfy the filter
+                return labels.every(l => {// checks if data matches the filter or not. (all have to be satisfied by the filter text)
+                    const converter = l.converter || String; // string or converter
+                    const ft = filterText[l.key]?.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                    const rt = converter(vf.data()[l.key])?.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                    return rt?.includes(ft);
+                });
+            });
         }
 
-        // create filter query string
-        const stringWhere = encodeURIComponent(Object.keys(where).reduce((o, v, i, a) => {
-            const l = labels.filter((l) => l.key === v)[0];
-            let retV = '';
-            if (where[v] !== '') {
-                retV = v + queryOperator(l, l?.comparator||'like', where, v);
-                retV = retV + (((a.length-1)!==i) ? ' AND ' : '');
-            }
-
-
-            return o + retV;
-        }, '').slice(0, -5));
-
-        const stringGroupBy = encodeURIComponent(groupBy.toString());
-        const stringSelect = encodeURIComponent(labels.map(v => v.key));
-
-        let query = `?q.select=${stringSelect}&q.orderBy=${orderBy}%20${direction}&q.pageNumber=${pageNum}&q.pageSize=${pageSize}&q.where=${stringWhere}&q.groupBy=${stringGroupBy}`; // query
-        console.log(url+query);
-        // and look at swagger ui for request url
-        // get response
-        const response = await fetch(url+query, {
-            method:'GET',
-            headers: {
-                "Authorization": `Bearer ${caspioTokens?.access_token}`, // This is the important part, the auth header
-                "Content-Type": 'application/json',
-            },
-        });
-
-        // if unauthroized, then refresh tokens
-        if (response.status === 401 && caspioTokens) {
-            getTokens();
-            return;
+        const results = filteredResults?.sort(getComparator(orderDirection, orderObj));// sort
+        setFilteredLength(results.length);// set length of results
+        const begin = (pageNum-1) * pageSize;
+        const end = pageNum*pageSize;
+        setInfoSlice(results.slice(begin, end));// limit the results per page
+        updateData && updateData(info => results.slice(begin, end)); // this is if someone wants to access the data in the table
+        if (debounced) {
+            setLoading(false);
         }
-        console.log('cool')
-
-        // get data
-        const data = await response.json();
-        const results = (dataFunc) ? dataFunc(data.Result) : data.Result;
-        setInfo(results);// set building info
-        updateData && updateData(results); // this is if someone wants to access the data in the table
-        setLoading(false); // finish loading
-    }, [caspioTokens, getTokens, url, labels, updateData, dataFunc, groupBy]);
+    }, [updateData, labels])
 
     // delay when to actually run the function
-    // eslint-disable-next-line
-    const debouncedGet = useCallback(debounce(getInfo, 500), [getInfo]);
-
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const debouncedFilter = useCallback(debounce(filteredInfo, 250), [filteredInfo])
 
 
     // update
     // Get the initial building info on load
     useEffect(() => {
-        if (debounced) {
-            debouncedGet(pageNum, pageSize, orderBy, orderDirection, filterText);
-        } else {
-            getInfo(pageNum, pageSize, orderBy, orderDirection, filterText);
-        }
-    }, [caspioTokens, pageNum, pageSize, orderBy, orderDirection, filterText, getInfo, debounced, debouncedGet]);
+        // if (false) {
+        //     debouncedGet(setLoading, setInfo);
+        // } else {
+        getInfo(setLoading, setInfo);
+        // }
+    }, [getInfo]);
 
+    // update the viewed list page
+    useEffect(() => {
+        if (debounced) {
+            debouncedFilter(pageNum, pageSize, orderObj, orderDirection, filterText, info, debounced);
+        } else {
+            filteredInfo(pageNum, pageSize, orderObj, orderDirection, filterText, info, debounced);
+        }
+    }, [filteredInfo, debounced, debouncedFilter, pageNum, pageSize, orderObj, orderDirection, filterText, info])
 
 
     // handlers
@@ -163,21 +163,19 @@ export default function CaspioDataTable({
         const size = parseInt(target.value, 10); // get the selected page size
         setPageSize(size); // set the page size
         setPageNum(1); // reset page num to beginning
-        setLoading(true); // set loading to true since loading
         setDebounced(false);
     };
 
     // next page 
     function handleNextPage() {
         setPageNum(p => p+1) // change page number
-        setLoading(true); // set loading to true since loading
+        // setLoading(true); // set loading to true since loading
         setDebounced(false);
     }
 
     // prev page
     function handlePrevPage() {
         setPageNum(p => p-1) // change page number
-        setLoading(true); // set loading to true since loading
         setDebounced(false);
     }
 
@@ -199,10 +197,9 @@ export default function CaspioDataTable({
     // handle sort
     function handleTableSort({currentTarget}) {
         const ob = currentTarget.dataset.labelName;
-        setOrderBy(ob);
+        setOrderObj(ob);
         setOrderDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
         setPageNum(1);
-        setLoading(true);
         setDebounced(false);
     }
 
@@ -236,7 +233,6 @@ export default function CaspioDataTable({
         setPageNum(1);
         setDebounced(true);
         setLoading(true);
-        setInfo([])
 
     }
 
@@ -300,7 +296,7 @@ export default function CaspioDataTable({
                                         }}
                                         >
                                         <TableSortLabel
-                                            active={orderBy === v.key}
+                                            active={orderObj === v.key}
                                             direction={orderDirection}
                                             onClick={handleTableSort}
                                             data-label-name={v.key}
@@ -332,22 +328,23 @@ export default function CaspioDataTable({
                             {/* Rows */}
                             {/* Checking if building info is still loading */}
                             {(!loading)
-                                ? info?.map((bi) => {
-                                    // let data = bi.data();
+                                ? infoSlice?.map((bi) => {
+                                    let data = bi.data();
                                     return (
                                         <TableRow
                                             hover
-                                            id={bi[pk]}
-                                            key={bi[pk]}
+                                            id={bi.id}
+                                            key={bi.id}
                                             onClick={()=>null}
                                             // sx={{ cursor: 'pointer' }}
                                             >
-                                            {labels.map((v, i) => (
-                                                <TableCell key={i} sx={{fontSize:'.75rem'}}>{v?.converter?.call(undefined,bi[v.key])||bi[v.key]}</TableCell>
-                                            ))}
+                                            {labels.map((v, i) => {
+                                                const renderFunc = (v?.renderer) ? v?.renderer : v?.converter;
+                                                return <TableCell key={i} sx={{fontSize:'.75rem'}}>{renderFunc?.call(undefined,data[v.key])||data[v.key]}</TableCell>
+                                            })}
                                             <TableCell align="center">
                                                 <IconButton 
-                                                    data-record-id={bi[pk]} 
+                                                    data-record-id={bi.id} 
                                                     size='small'
                                                     onClick={handleMenuOpen}
                                                     >
@@ -427,17 +424,20 @@ export default function CaspioDataTable({
                             // label="Rows per page"
                             onChange={handlePageSize}
                             >
+                            <MenuItem value={10}>10</MenuItem>
                             <MenuItem value={25}>25</MenuItem>
                             <MenuItem value={50}>50</MenuItem>
                             <MenuItem value={100}>100</MenuItem>
+                            <MenuItem value={200}>200</MenuItem>
+                            <MenuItem value={500}>500</MenuItem>
                         </Select>
                     </FormControl>
                     {/* items being viewed */}
-                    <Typography variant='body' sx={{mr:2}}>{(pageNum-1)*pageSize+Boolean(info?.length)} - {(pageNum-1)*pageSize+info?.length}</Typography>
+                    <Typography variant='body' sx={{mr:2}}>{(pageNum-1)*pageSize+Boolean(infoSlice?.length)}-{(pageNum-1)*pageSize+infoSlice?.length} of {filteredLength}</Typography>
                     {/* prev */}
                     <IconButton disabled={loading || pageNum===1} onClick={handlePrevPage}><KeyboardArrowLeftRoundedIcon /></IconButton>
                     {/* mext */}
-                    <IconButton disabled={loading || info?.length<pageSize} onClick={handleNextPage}><KeyboardArrowRightRoundedIcon /></IconButton>
+                    <IconButton disabled={loading || infoSlice?.length<pageSize} onClick={handleNextPage}><KeyboardArrowRightRoundedIcon /></IconButton>
                 </Box>
             </Box>
         </Box>
@@ -446,23 +446,25 @@ export default function CaspioDataTable({
 
 
 
-// function descendingComparator(a, b, orderBy) {
-//     if (b[orderBy] < a[orderBy]) {
-//         return -1;
-//     }
-//     if (b[orderBy] > a[orderBy]) {
-//         return 1;
-//     }
-//         return 0;
-// }
+function descendingComparator(a, b, orderObj) {
+    const dataA = a.data();
+    const dataB = b.data();
+    if (dataB[orderObj] < dataA[orderObj]) {
+        return -1;
+    }
+    if (dataB[orderObj] > dataA[orderObj]) {
+        return 1;
+    }
+        return 0;
+}
 
-// function getComparator(order, orderBy) {
-//     // 1 is ascending
-//     // 0 is descending
-//     return order
-//         ? (a, b) => -descendingComparator(a, b, orderBy)
-//         : (a, b) => descendingComparator(a, b, orderBy);
-// }
+function getComparator(order, orderObj) {
+    // 1 is ascending
+    // 0 is descending
+    return order === 'asc'
+        ? (a, b) => -descendingComparator(a, b, orderObj)
+        : (a, b) => descendingComparator(a, b, orderObj);
+}
 
 
 function debounce(func, delay) {

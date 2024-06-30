@@ -1,17 +1,12 @@
-import {useAuth} from '../../AuthContext';
-import CaspioDataTable from '../dataTable/CaspioDataTable';
+import FirestoreDataTable from '../dataTable/FirestoreDataTable';
 
 
 
 export default function CustomerOverviewBuilding() {
-    const {caspioTokens, getTokens} = useAuth(); // get access tokens
 
     const tableInfo = {
-        url: 'https://c1acl820.caspio.com/rest/v2/tables/A1_Building_Information/records',
-        caspioTokens: caspioTokens,
-        getTokens: getTokens,
+        collectionName: 'A1_Building_Information',
         title: 'Customer / Building Information',
-        pk: 'Building_ID',
         labels: [
             {name:'Property Name', key:'Property_Name'},
             {name:'Building Range', key:'Building_Range'},
@@ -24,7 +19,7 @@ export default function CustomerOverviewBuilding() {
 
     return (
         <>
-            <CaspioDataTable {...tableInfo} />
+            <FirestoreDataTable {...tableInfo} />
         </>
     );
 }

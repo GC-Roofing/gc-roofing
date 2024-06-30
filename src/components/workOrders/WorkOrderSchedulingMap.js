@@ -1,12 +1,14 @@
-import {useState, useEffect, useCallback, memo} from 'react';
-import {APIProvider, Map, AdvancedMarker, useMapsLibrary, useMap} from '@vis.gl/react-google-maps';
+import {useState, useEffect, useCallback, memo, useMemo} from 'react';
+import {APIProvider, Map, AdvancedMarker, useMap, useAdvancedMarkerRef, InfoWindow} from '@vis.gl/react-google-maps';
 
 
 import WorkOrderScheduling from './WorkOrderScheduling';
 
 import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 
 
+// this is so that the hooks are useable.
 export default function WorkOrderSchedulingMap() {
     return (
         <APIProvider apiKey={'AIzaSyD_uVKlMkmGj4HIbA3cg6f4uKcv3R9pCos'}>
@@ -15,10 +17,11 @@ export default function WorkOrderSchedulingMap() {
     );
 }
 
+// actual contents
 function APIMap() {
     // init
     const fresno = {lat: 36.7378, lng: -119.7871}; // center on fresno
-    const geocoderLibrary = useMapsLibrary('geocoding'); // library
+    // const geocoderLibrary = useMapsLibrary('geocoding'); // library
     const map = useMap();
     const mapOptions = {
         disableDefaultUI: true,
@@ -37,36 +40,40 @@ function APIMap() {
 
     // state
     const [data, setData] = useState(); // data to get from query
-    const [geocodes, setGeocodes] = useState([]); // for setting the geocodes
+    // useMemo
+    const geocodes = useMemo(() => {
+        return data?.map((v, i) => v.data().coordinates);
+    }, [data])
+
 
     // callbacks
     const updateData = useCallback((d) => setData(d), []);
 
     // updates
     // sets up the markers based on the data
-    useEffect(() => {
-        if (geocoderLibrary !== null) {
-            const geocoder = new geocoderLibrary.Geocoder();
+    // useEffect(() => {
+    //     if (geocoderLibrary !== null) {
+    //         const geocoder = new geocoderLibrary.Geocoder();
 
-            setGeocodes(prev => []);
-            data?.slice(0,10).forEach((v, i) => {
-                const gr = {
-                    address: v.Building_Address,
-                };
+    //         setGeocodes(prev => []);
+    //         data?.slice(0,10).forEach((v, i) => {
+    //             const gr = {
+    //                 address: v.data().Building_Address,
+    //             };
 
-                console.log('bye')
-                geocoder.geocode(gr, (results, status) => {
-                    if (status === 'OK') {
-                        const gs = results?.at(0).geometry.location;
-                        setGeocodes(prev => prev.concat(gs));
-                    } else {
-                        console.log(status);
-                    }
+    //             console.log('bye')
+    //             geocoder.geocode(gr, (results, status) => {
+    //                 if (status === 'OK') {
+    //                     const gs = results?.at(0).geometry.location;
+    //                     setGeocodes(prev => prev.concat(gs));
+    //                 } else {
+    //                     console.log(status);
+    //                 }
                     
-                });
-            });
-        }
-    }, [data, geocoderLibrary])
+    //             });
+    //         });
+    //     }
+    // }, [data, geocoderLibrary])
 
     // fit the map to the markers
     useEffect(() => {
@@ -94,8 +101,25 @@ function APIMap() {
         }
     }, [map])
 
+
+    // handlers
+    // function handleMarkerClick(event) {
+    //     console.log(event)
+    // }
+
+    // function handleInfoClose() {
+    //     setMarker(null);
+    // }
+
+    // function handleMarkerRef(ref) {
+    //     if (marker) {
+    //         markerRef.current[marker] = ref;
+    //     }
+    // }
+
     return (
         <Box sx={{height:'100%', overflow:'scroll'}}>
+            {/* map */}
             <Box 
                 sx={{
                     height:'75%',
@@ -104,11 +128,12 @@ function APIMap() {
                 }}
                 >
                 <Map mapId='94b3e10296906c3b' defaultCenter={fresno} defaultZoom={10} options={mapOptions}>
-                    {geocodes.map((v, i) => (
-                        <AdvancedMarker key={i} position={v} />
+                    {data?.map((v, i) => (
+                        <CustomInfoMarker key={i} data={v.data()} />
                     ))}
                 </Map>
             </Box>
+            {/* filter */}
             <Box sx={{height:'100%', overflow:'scroll'}}>
                 <MemoWorkOrderScheduling updateData={updateData} />
             </Box>
@@ -120,7 +145,32 @@ function APIMap() {
 const MemoWorkOrderScheduling = memo(({updateData}) => <WorkOrderScheduling updateData={updateData} />);
 
 
+function CustomInfoMarker({key, data}) {
+    const [markerRef, marker] = useAdvancedMarkerRef();
+    const [infoWindowShown, setInfoWindowShown] = useState(false);
 
+    function handleOpen() {
+        setInfoWindowShown(true);
+    }
+
+    function handleClose() {
+        setInfoWindowShown(false);
+    }
+
+    return (
+        <>
+            <AdvancedMarker ref={markerRef} key={key} position={data.coordinates} onClick={handleOpen} />
+            {infoWindowShown &&
+                <InfoWindow anchor={marker} onClose={handleClose} >
+                    <Typography variant='h6'>WO# {data.WO_Number}</Typography>
+                    <Typography>Lead Tech: {data.Roof_Tech_Assigned_1}</Typography>
+                    <Typography>Entity: {data.Entity_Company}</Typography>
+                    <Typography>Address: {data.Building_Address}, {data.Building_City}</Typography>
+                </InfoWindow>
+            }
+        </>
+    );
+}
 
 
 

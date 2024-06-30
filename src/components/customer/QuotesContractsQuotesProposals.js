@@ -1,19 +1,24 @@
-import {useAuth} from '../../AuthContext';
-import CaspioDataTable from '../dataTable/CaspioDataTable';
+import FirestoreDataTable from '../dataTable/FirestoreDataTable';
 
 import Button from '@mui/material/Button';
 
 export default function QuotesContractsQuotesProposals() {
-    const {caspioTokens, getTokens} = useAuth(); // get access tokens
 
-    const ButtonLink = ({children, href}) => <Button size='small' sx={{textWrap:'wrap', display:href ? 'inline-block' : 'none', minWidth:0}} href={href}>{children}</Button>;
+    const ButtonLink = ({children, href}) => (
+        <Button 
+            size='small' 
+            sx={{textWrap:'wrap', display:href ? 'inline-block' : 'none', minWidth:0}} 
+            href={href} 
+            target = "_blank" 
+            rel = "noopener noreferrer"
+            >
+            {children}
+        </Button>
+    );
 
     const tableInfo = {
-        url: 'https://c1acl820.caspio.com/rest/v2/tables/C1_Contracts_Quotes_Table/records',
-        caspioTokens: caspioTokens,
-        getTokens: getTokens,
+        collectionName: 'C1_Contracts_Quotes_Table',
         title: 'Quotes & Proposals',
-        pk: 'Proposal_ID',
         labels: [
             {name:'Quote ID', key:'Quote_ID'},
             {name:'Property Name', key:'Property_Name'},
@@ -49,20 +54,20 @@ export default function QuotesContractsQuotesProposals() {
             },
             {
                 name:'Photo Link', key:'QO_Company_Cam_Link', hideSearch:true,
-                converter:(v) => <ButtonLink href={v}>Photo Link</ButtonLink>,
+                renderer:(v) => <ButtonLink href={v}>Photo Link</ButtonLink>,
             },
             {
                 name:'Dropbox Link', key:'Dropbox_Link', hideSearch:true,
-                converter:(v) => <ButtonLink href={v}>Dropbox Link</ButtonLink>,
+                renderer:(v) => <ButtonLink href={v}>Dropbox Link</ButtonLink>,
             },
             {name:'Ready for Google Doc', key:'ReadyForDoc'},
             {
                 name:'Edit', key:'Drive_Link_Edit', hideSearch:true,
-                converter:(v) => <ButtonLink href={v}>Edit</ButtonLink>,
+                renderer:(v) => <ButtonLink href={v}>Edit</ButtonLink>,
             },
             {
                 name:'Download PDF', key:'Drive_Link_PDF', hideSearch:true,
-                converter:(v) => <ButtonLink href={v}>Download PDF</ButtonLink>,
+                renderer:(v) => <ButtonLink href={v}>Download PDF</ButtonLink>,
             },
             {name:'Close Quote', key:'Close_Quote'},
             
@@ -71,7 +76,7 @@ export default function QuotesContractsQuotesProposals() {
 
     return (
         <>
-            <CaspioDataTable {...tableInfo} />
+            <FirestoreDataTable {...tableInfo} />
         </>
     );
 }

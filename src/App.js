@@ -33,7 +33,8 @@ import ProductProductList from './components/inventory/ProductProductList';
 import ProductRoofSystems from './components/inventory/ProductRoofSystems';
 import OrderHistoryNewOrder from './components/inventory/OrderHistoryNewOrder';
 import OverviewSidebar from './components/pvm/OverviewSidebar';
-
+import TransferCaspioData from './components/dataTable/TransferCaspioData';
+import BatchUpdates from './components/dataTable/BatchUpdates';
 
 
 
@@ -310,7 +311,17 @@ function App() {
                             path:'admin',
                             element:'admin',
                             loader: () => document.title = 'Admin',
-                        }
+                        },
+                        {
+                            path:'transfer314',
+                            element: <TransferCaspioData />,
+                            loader: () => document.title = 'Transfer',
+                        },
+                        {
+                            path:'update314',
+                            element: <BatchUpdates />,
+                            loader: () => document.title = 'Update',
+                        },
                     ]
                 },
             ]

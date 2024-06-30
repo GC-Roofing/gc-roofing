@@ -1,18 +1,13 @@
-import {useAuth} from '../../AuthContext';
-import CaspioDataTable from '../dataTable/CaspioDataTable';
+import FirestoreDataTable from '../dataTable/FirestoreDataTable';
 
 import Box from '@mui/material/Box';
 
 
 export default function HistoricalWarranties() {
-    const {caspioTokens, getTokens} = useAuth(); // get access tokens
 
     const tableInfo = {
-        url: 'https://c1acl820.caspio.com/rest/v2/tables/W1_Historical_Warranties/records',
-        caspioTokens: caspioTokens,
-        getTokens: getTokens,
+        collectionName: 'W1_Historical_Warranties',
         title: 'Historical Warranties Report',
-        pk: 'Record_ID',
         padding: '1%',
         labels: [
             {
@@ -82,7 +77,7 @@ export default function HistoricalWarranties() {
     return (
         <>
             <Box sx={{mx:'1%', overflow:'scroll', height:'100%'}}>
-                <CaspioDataTable {...tableInfo} />
+                <FirestoreDataTable {...tableInfo} />
             </Box>
         </>
     );

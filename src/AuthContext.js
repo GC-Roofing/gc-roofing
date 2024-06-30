@@ -22,14 +22,18 @@ export default function AuthContext({children}) {
         const url = 'https://c1acl820.caspio.com/oauth/token';
         const clientId = 'aff40c25374b4b75cb6a856f5b454d30135c74c3e87350d098';
         const clientSecret = '605c8813df2c49ccb506330467e8de7d1415749f6b8816768b';
+        let data;
 
-        const response = await fetch(url, {
-            method: 'POST',
-            body: `grant_type=client_credentials&client_id=${clientId}&client_secret=${clientSecret}`,
-        });
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                body: `grant_type=client_credentials&client_id=${clientId}&client_secret=${clientSecret}`,
+            });
 
-        const data = await response.json();    
-        setCaspioTokens(data);
+            let data = await response.json();    
+            setCaspioTokens(data);
+        } catch (e) {console.log('couldn\'t fetch getTokens')}
+
         return data && 'success';
     }
 
