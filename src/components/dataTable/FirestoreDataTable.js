@@ -88,7 +88,7 @@ export default function FirestoreDataTable({
     // async function for filtering and sorting
     const getInfo = useCallback(async (pageNum, pageSize, orderObj, orderDirection, filterText) => {
         try {
-            console.log('cool')
+            // get callable function and data
             const filterData = httpsCallable(functions, 'filterData');
             const result = await filterData({
                 collections:collectionNames, 
@@ -100,9 +100,9 @@ export default function FirestoreDataTable({
                 filter:filterText, 
                 labels:labels,
             });
-            const data = result.data;
-            setInfo(data.data);
-            setFilteredLength(data.length);
+            const data = result.data; // result.data is because it is the data of the results
+            setInfo(data.data); // data.data is because i have an object {data: obj, length: num}
+            setFilteredLength(data.length); // set the total length
             updateData && updateData(info => data.data); // this is if someone wants to access the data in the table
             setLoading(false);
         } catch(e) {

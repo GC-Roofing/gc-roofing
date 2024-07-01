@@ -52,7 +52,7 @@ exports.filterData = onCall({ cors: ['https://gc-roofing.web.app', "http://local
             return [c, querySnapshot.docs.map(doc => ({id:doc.id, data: {...doc.data()}}))];
         }));
 
-        // make collection object
+        // make collection object where keys are collectionName and values are the data/id
         // console.log('derek ------> make collection object');
         let collections = returnCollections.reduce((obj, v) => {
             obj[v[0]] = v[1];
@@ -67,73 +67,17 @@ exports.filterData = onCall({ cors: ['https://gc-roofing.web.app', "http://local
             let rightData = collections[relation.collections[0]];
 
             if (relation.joinType === 'inner') {
-                let rightDataJoin = new Set(rightData.map(d => d.data[relation.joinOn]));
-                leftData = leftData.filter(d => rightDataJoin.has(d.data[relation.joinOn])).sort(getComparator('asc', relation.joinOn));
-
-                let leftDataJoin = new Set(leftData.map(d => d.data[relation.joinOn]));
-                rightData = rightData.filter(d => leftDataJoin.has(d.data[relation.joinOn])).sort(getComparator('asc', relation.joinOn));
-
-                data = leftData.map((d, i) => {
-                    let omitNull = obj => {
-                        Object.keys(obj).filter(k => obj[k] === '').forEach(k => delete(obj[k]))
-                        return obj
-                    }
-
-                    return {
-                        id:d.id + rightData[i].id,
-                        data: {
-                            ...d.data,
-                            ...omitNull(rightData[i].data),
-                        }
-                    }
-                })
+                data = innerJoin(leftData, rightData, relation.joinOn);
             } else if (relation.joinType === 'left') {
-                let leftDataJoin = new Set(rightData.map(d => d.data[relation.joinOn]));
-                rightData = rightData.filter(d => leftDataJoin.has(d.data[relation.joinOn])).sort(getComparator('asc', relation.joinOn));
-                data = leftData.map((d, i) => {
-                    let omitNull = obj => {
-                        if (!obj) return {};
-                        Object.keys(obj).filter(k => obj[k] === '').forEach(k => delete(obj[k]))
-                        return obj
-                    }
-
-                    return {
-                        id:d.id + (rightData[i]?.id||1),
-                        data: {
-                            ...d.data,
-                            ...omitNull(rightData[i]?.data),
-                        }
-                    }
-                })
+                data = leftJoin(leftData, rightData, relation.joinOn);
             } else if (relation.joinType === 'right') {
-                let rightDataJoin = new Set(rightData.map(d => d.data[relation.joinOn]));
-                leftData = leftData.filter(d => rightDataJoin.has(d.data[relation.joinOn])).sort(getComparator('asc', relation.joinOn));
-                data = rightData.map((d, i) => {
-                    let omitNull = obj => {
-                        if (obj === null) return {};
-                        Object.keys(obj).filter(k => obj[k] === '').forEach(k => delete(obj[k]))
-                        return obj
-                    }
-
-                    return {
-                        id:d.id + (leftData[i]?.id||1),
-                        data: {
-                            ...d.data,
-                            ...omitNull(leftData[i]?.data),
-                        }
-                    }
-                })
+                data = rightJoin(leftData, rightData, relation.joinOn);
             } else {
                 throw new HttpsError('invalid-argument', "only inner and left joins are supported");
             }
         }
 
         // console.log('derek ------> finished joining')
-
-        // rest
-        // const data = dataList[0];
-        // console.log(`derek Data fetched: ${data.length} items`);
-        // console.log(`derek data fetched: ${data[0]}`)
 
         let filteredResults = data;
 
@@ -149,13 +93,16 @@ exports.filterData = onCall({ cors: ['https://gc-roofing.web.app', "http://local
             });
         }
         
+        // sort the results
         const results = filteredResults.sort(getComparator(orderDirection, orderBy));
-        const filteredLength = results.length;
+        const filteredLength = results.length; // get the total length
 
+        // limit results
         const begin = (pageNum-1) * pageSize;
         const end = pageNum*pageSize;
         const returnResults = results.slice(begin, end);// limit the results per page
 
+        // return results
         // console.log('derek Function completed successfully');
         return {data: returnResults, length:filteredLength};
         // res.status(200).send({data: returnResults, length:filteredLength});
@@ -200,7 +147,68 @@ function getComparator(order, orderObj) {
 }
 
 
+function innerJoin(leftData, rightData, joinOn) {
+    let rightDataJoin = new Set(rightData.map(d => d.data[joinOn]));
+    leftData = leftData.filter(d => rightDataJoin.has(d.data[joinOn])).sort(getComparator('asc', joinOn));
 
+    let leftDataJoin = new Set(leftData.map(d => d.data[joinOn]));
+    rightData = rightData.filter(d => leftDataJoin.has(d.data[joinOn])).sort(getComparator('asc', joinOn));
+
+    return leftData.map((d, i) => {
+        let omitNull = obj => {
+            Object.keys(obj).filter(k => obj[k] === '').forEach(k => delete(obj[k]))
+            return obj
+        }
+
+        return {
+            id:d.id + rightData[i].id,
+            data: {
+                ...d.data,
+                ...omitNull(rightData[i].data),
+            }
+        }
+    })
+}
+
+function leftJoin(leftData, rightData, joinOn) {
+    let leftDataJoin = new Set(rightData.map(d => d.data[joinOn]));
+    rightData = rightData.filter(d => leftDataJoin.has(d.data[joinOn])).sort(getComparator('asc', joinOn));
+    return leftData.map((d, i) => {
+        let omitNull = obj => {
+            if (!obj) return {};
+            Object.keys(obj).filter(k => obj[k] === '').forEach(k => delete(obj[k]))
+            return obj
+        }
+
+        return {
+            id:d.id + (rightData[i]?.id||1),
+            data: {
+                ...d.data,
+                ...omitNull(rightData[i]?.data),
+            }
+        }
+    })
+}
+
+function rightJoin(leftData, rightData, joinOn) {
+    let rightDataJoin = new Set(rightData.map(d => d.data[joinOn]));
+    leftData = leftData.filter(d => rightDataJoin.has(d.data[joinOn])).sort(getComparator('asc', joinOn));
+    return rightData.map((d, i) => {
+        let omitNull = obj => {
+            if (obj === null) return {};
+            Object.keys(obj).filter(k => obj[k] === '').forEach(k => delete(obj[k]))
+            return obj
+        }
+
+        return {
+            id:d.id + (leftData[i]?.id||1),
+            data: {
+                ...d.data,
+                ...omitNull(leftData[i]?.data),
+            }
+        }
+    })
+}
 
 
 
