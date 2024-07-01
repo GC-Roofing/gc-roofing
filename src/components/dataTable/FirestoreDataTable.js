@@ -1,9 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
-import { getDocs, query, collection } from "firebase/firestore"; 
 import { httpsCallable } from "firebase/functions";
 
 
-import {firestore, functions} from '../../firebase';
+import {functions} from '../../firebase';
 
 
 import Box from '@mui/material/Box';
@@ -310,7 +309,7 @@ export default function FirestoreDataTable({
                                             // sx={{ cursor: 'pointer' }}
                                             >
                                             {labels.map((v, i) => {
-                                                if (v.hideRender) return;
+                                                if (v.hideRender) return null;
                                                 const renderFunc = (v?.renderer) ? v?.renderer : v?.converter;
                                                 return <TableCell key={i} sx={{fontSize:'.75rem'}}>{renderFunc?.call(undefined,data[v.key])||data[v.key]}</TableCell>
                                             })}
@@ -418,25 +417,25 @@ export default function FirestoreDataTable({
 
 
 
-function descendingComparator(a, b, orderObj) {
-    const dataA = a.data;
-    const dataB = b.data;
-    if (dataB[orderObj] < dataA[orderObj]) {
-        return -1;
-    }
-    if (dataB[orderObj] > dataA[orderObj]) {
-        return 1;
-    }
-        return 0;
-}
+// function descendingComparator(a, b, orderObj) {
+//     const dataA = a.data;
+//     const dataB = b.data;
+//     if (dataB[orderObj] < dataA[orderObj]) {
+//         return -1;
+//     }
+//     if (dataB[orderObj] > dataA[orderObj]) {
+//         return 1;
+//     }
+//         return 0;
+// }
 
-function getComparator(order, orderObj) {
-    // 1 is ascending
-    // 0 is descending
-    return order === 'asc'
-        ? (a, b) => -descendingComparator(a, b, orderObj)
-        : (a, b) => descendingComparator(a, b, orderObj);
-}
+// function getComparator(order, orderObj) {
+//     // 1 is ascending
+//     // 0 is descending
+//     return order === 'asc'
+//         ? (a, b) => -descendingComparator(a, b, orderObj)
+//         : (a, b) => descendingComparator(a, b, orderObj);
+// }
 
 
 function debounce(func, delay) {
