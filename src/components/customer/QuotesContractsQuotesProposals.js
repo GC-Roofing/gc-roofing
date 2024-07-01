@@ -17,7 +17,7 @@ export default function QuotesContractsQuotesProposals() {
     );
 
     const tableInfo = {
-        collectionName: 'C1_Contracts_Quotes_Table',
+        collectionNames: ['C1_Contracts_Quotes_Table'],
         title: 'Quotes & Proposals',
         labels: [
             {name:'Quote ID', key:'Quote_ID'},

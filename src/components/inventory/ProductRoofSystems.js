@@ -6,7 +6,7 @@ export default function ProductRoofSystems() {
 
 
     const tableInfo = {
-        collectionName: 'L2_Products_Table',
+        collectionNames: ['L2_Products_Table'],
         title: 'Roof Systems',
         labels: [
             {name:'Product Name', key:'ProductName'},

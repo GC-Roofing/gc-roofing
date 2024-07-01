@@ -1,9 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { getDocs, query, collection } from "firebase/firestore"; 
-import { httpsCallable } from "firebase/functions";
 
-
-import {firestore, functions} from '../../firebase';
+import {firestore} from '../../firebase';
 
 
 import Box from '@mui/material/Box';
@@ -39,7 +37,7 @@ import Collapse from '@mui/material/Collapse';
 
 
 export default function FirestoreDataTable({
-        title, collectionNames, relations, labels,
+        title, collectionName, labels,
         updateData=null, dataFunc=null,
         initialOrderObj=null, initialOrderDirection='asc', initialFilter=null, groupBy=[],
         padding='4%'
@@ -47,7 +45,7 @@ export default function FirestoreDataTable({
     /*
         const tableInfo = {
             title: 'Stop Priority',
-            collectionNames: collectionNames,
+            collectionName: collectionName,
             labels: [
                 {
                     name:'Start Date', key:'Start_Date',
@@ -73,9 +71,12 @@ export default function FirestoreDataTable({
         }
     */
     const [info, setInfo] = useState([]);  // state for building info
+    const [infoSlice, setInfoSlice] = useState([]);
     const [filteredLength, setFilteredLength] = useState(0);
     const [pageSize, setPageSize] = useState(25); // state for number of rows on a page
     const [pageNum, setPageNum] = useState(1); // state for page number
+    // const [pageNumObj, setPageNumObj] = useState(null);
+    // const [pageLimitObj, setPageLimitObj] = useState(limit(pageSize));
     const [orderObj, setOrderObj] = useState(initialOrderObj||labels[0].key); // state for order by //not being used
     const [loading, setLoading] = useState(true); // check if still loading
     const [anchorEl, setAnchorEl] = useState(null); // anchor menu
@@ -86,44 +87,74 @@ export default function FirestoreDataTable({
     const [filterText, setFilterText] = useState(labels.reduce((o, v) => ({...o, [v.key]: (v.key===initialFilter?.key) ? initialFilter?.value : ''}), {}));
     const [debounced, setDebounced] = useState(false);
 
-    // async function for filtering and sorting
-    const getInfo = useCallback(async (pageNum, pageSize, orderObj, orderDirection, filterText) => {
-        try {
-            console.log('cool')
-            const filterData = httpsCallable(functions, 'filterData');
-            const result = await filterData({
-                collections:collectionNames, 
-                relations:relations,
-                pageNum:pageNum, 
-                pageSize:pageSize, 
-                orderBy:orderObj, 
-                orderDirection:orderDirection, 
-                filter:filterText, 
-                labels:labels,
-            });
-            const data = result.data;
-            setInfo(data.data);
-            setFilteredLength(data.length);
-            updateData && updateData(info => data.data); // this is if someone wants to access the data in the table
-            setLoading(false);
-        } catch(e) {
-            console.log(e.message);
+    // Callback functions
+    // async function to get building info
+    const getInfo = useCallback(async (updateLoading, updateInfo,) => {
+        // get info
+        const collectionRef = collection(firestore, collectionName);
+        const querySnapshot = query(collectionRef);
+        const docSnapshot = await getDocs(querySnapshot);
+
+        let results = docSnapshot.docs;
+        if (dataFunc) {
+            results = dataFunc(results);
         }
-    }, [updateData, labels, collectionNames, relations])
+        // const sortedResults = results.sort(getComparator(direction, orderObj));
+        // set data
+        updateInfo(info => results);// set building info
+        // await updatePageNumObj(sortedResults.slice(0, pageSize))
+        updateLoading(false); // finish loading
+    }, [collectionName, dataFunc]);
+
+    // async function for filtering and sorting
+    const filteredInfo = useCallback(async (pageNum, pageSize, orderObj, orderDirection, filterText, info, debounced) => {
+        let filteredResults = info;
+        // filter if text has been inputted into filter
+        if (Object.values(filterText).some(x => x !== '')) {
+            filteredResults = info.filter((vf, i) => {// filter out the values that do not satisfy the filter
+                return labels.every(l => {// checks if data matches the filter or not. (all have to be satisfied by the filter text)
+                    const converter = l.converter || String; // string or converter
+                    const ft = filterText[l.key]?.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                    const rt = converter(vf.data()[l.key])?.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                    return rt?.includes(ft);
+                });
+            });
+        }
+
+        const results = filteredResults?.sort(getComparator(orderDirection, orderObj));// sort
+        setFilteredLength(results.length);// set length of results
+        const begin = (pageNum-1) * pageSize;
+        const end = pageNum*pageSize;
+        setInfoSlice(results.slice(begin, end));// limit the results per page
+        updateData && updateData(info => results.slice(begin, end)); // this is if someone wants to access the data in the table
+        if (debounced) {
+            setLoading(false);
+        }
+    }, [updateData, labels])
 
     // delay when to actually run the function
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    const debouncedInfo = useCallback(debounce(getInfo, 500), [getInfo])
+    const debouncedFilter = useCallback(debounce(filteredInfo, 250), [filteredInfo])
+
+
+    // update
+    // Get the initial building info on load
+    useEffect(() => {
+        // if (false) {
+        //     debouncedGet(setLoading, setInfo);
+        // } else {
+        getInfo(setLoading, setInfo);
+        // }
+    }, [getInfo]);
 
     // update the viewed list page
     useEffect(() => {
-        setLoading(true);
         if (debounced) {
-            debouncedInfo(pageNum, pageSize, orderObj, orderDirection, filterText);
+            debouncedFilter(pageNum, pageSize, orderObj, orderDirection, filterText, info, debounced);
         } else {
-            getInfo(pageNum, pageSize, orderObj, orderDirection, filterText);
+            filteredInfo(pageNum, pageSize, orderObj, orderDirection, filterText, info, debounced);
         }
-    }, [getInfo, debounced, debouncedInfo, pageNum, pageSize, orderObj, orderDirection, filterText])
+    }, [filteredInfo, debounced, debouncedFilter, pageNum, pageSize, orderObj, orderDirection, filterText, info])
 
 
     // handlers
@@ -201,7 +232,7 @@ export default function FirestoreDataTable({
 
         setPageNum(1);
         setDebounced(true);
-        // setLoading(true);
+        setLoading(true);
 
     }
 
@@ -249,38 +280,36 @@ export default function FirestoreDataTable({
                         <TableHead>
                             <TableRow>
                                 {labels.map((v, i) => (
-                                    (v.hideRender)
-                                        ? null
-                                        : <TableCell 
-                                            key={i} 
-                                            align={"left"} 
-                                            sx={{
-                                                fontWeight:'bold', fontSize:'.75rem',
-                                                verticalAlign:'bottom',
-                                                '&.MuiTableCell-head': {
-                                                    // display:'flex',
-                                                    // alignItems:'end'
+                                    <TableCell 
+                                        key={i} 
+                                        align={"left"} 
+                                        sx={{
+                                            fontWeight:'bold', fontSize:'.75rem',
+                                            verticalAlign:'bottom',
+                                            '&.MuiTableCell-head': {
+                                                // display:'flex',
+                                                // alignItems:'end'
 
+                                            }
+                                            // display:'flex', alignItems:'end'
+                                            // width:`${100/labels.length}%`, // if i want to cause tables to not jerk so much
+                                        }}
+                                        >
+                                        <TableSortLabel
+                                            active={orderObj === v.key}
+                                            direction={orderDirection}
+                                            onClick={handleTableSort}
+                                            data-label-name={v.key}
+                                            sx={{
+                                                // textWrap:'nowrap',
+                                                '&.MuiTableSortLabel-root': {
+                                                    textWrap:'wrap',
                                                 }
-                                                // display:'flex', alignItems:'end'
-                                                // width:`${100/labels.length}%`, // if i want to cause tables to not jerk so much
                                             }}
                                             >
-                                            <TableSortLabel
-                                                active={orderObj === v.key}
-                                                direction={orderDirection}
-                                                onClick={handleTableSort}
-                                                data-label-name={v.key}
-                                                sx={{
-                                                    // textWrap:'nowrap',
-                                                    '&.MuiTableSortLabel-root': {
-                                                        textWrap:'wrap',
-                                                    }
-                                                }}
-                                                >
-                                                {v.name}
-                                            </TableSortLabel>
-                                        </TableCell>
+                                            {v.name}
+                                        </TableSortLabel>
+                                    </TableCell>
                                 ))}
                                 <TableCell align="center">
                                     <IconButton onClick={handleToggleFilter}>
@@ -299,8 +328,8 @@ export default function FirestoreDataTable({
                             {/* Rows */}
                             {/* Checking if building info is still loading */}
                             {(!loading)
-                                ? info?.map((bi) => {
-                                    let data = bi.data;
+                                ? infoSlice?.map((bi) => {
+                                    let data = bi.data();
                                     return (
                                         <TableRow
                                             hover
@@ -310,7 +339,6 @@ export default function FirestoreDataTable({
                                             // sx={{ cursor: 'pointer' }}
                                             >
                                             {labels.map((v, i) => {
-                                                if (v.hideRender) return;
                                                 const renderFunc = (v?.renderer) ? v?.renderer : v?.converter;
                                                 return <TableCell key={i} sx={{fontSize:'.75rem'}}>{renderFunc?.call(undefined,data[v.key])||data[v.key]}</TableCell>
                                             })}
@@ -405,11 +433,11 @@ export default function FirestoreDataTable({
                         </Select>
                     </FormControl>
                     {/* items being viewed */}
-                    <Typography variant='body' sx={{mr:2}}>{(pageNum-1)*pageSize+Boolean(info?.length)}-{(pageNum-1)*pageSize+info?.length} of {filteredLength}</Typography>
+                    <Typography variant='body' sx={{mr:2}}>{(pageNum-1)*pageSize+Boolean(infoSlice?.length)}-{(pageNum-1)*pageSize+infoSlice?.length} of {filteredLength}</Typography>
                     {/* prev */}
                     <IconButton disabled={loading || pageNum===1} onClick={handlePrevPage}><KeyboardArrowLeftRoundedIcon /></IconButton>
                     {/* mext */}
-                    <IconButton disabled={loading || info?.length<pageSize} onClick={handleNextPage}><KeyboardArrowRightRoundedIcon /></IconButton>
+                    <IconButton disabled={loading || infoSlice?.length<pageSize} onClick={handleNextPage}><KeyboardArrowRightRoundedIcon /></IconButton>
                 </Box>
             </Box>
         </Box>
@@ -419,8 +447,8 @@ export default function FirestoreDataTable({
 
 
 function descendingComparator(a, b, orderObj) {
-    const dataA = a.data;
-    const dataB = b.data;
+    const dataA = a.data();
+    const dataB = b.data();
     if (dataB[orderObj] < dataA[orderObj]) {
         return -1;
     }

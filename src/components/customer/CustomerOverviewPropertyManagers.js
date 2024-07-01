@@ -5,7 +5,7 @@ import FirestoreDataTable from '../dataTable/FirestoreDataTable';
 export default function CustomerOverviewPropertyManagers() {
 
     const tableInfo = {
-        collectionName: 'A2_Property_Managers',
+        collectionNames: ['A2_Property_Managers'],
         title: 'Property Management Companies',
         labels: [
             {

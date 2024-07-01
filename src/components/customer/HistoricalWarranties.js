@@ -6,7 +6,7 @@ import Box from '@mui/material/Box';
 export default function HistoricalWarranties() {
 
     const tableInfo = {
-        collectionName: 'W1_Historical_Warranties',
+        collectionNames: ['W1_Historical_Warranties'],
         title: 'Historical Warranties Report',
         padding: '1%',
         labels: [

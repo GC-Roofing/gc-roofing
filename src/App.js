@@ -45,7 +45,7 @@ function App() {
     const router = createBrowserRouter([
         {
             path:'',
-            element: <Navigate to='/login' />,
+            element: <Navigate replace to='/login' />,
         },
         {
             path: "/login",
@@ -67,7 +67,7 @@ function App() {
                     children: [
                         {
                             index:true,
-                            element: <Navigate to='home' />,
+                            element: <Navigate replace to='home' />,
                         },
                         {
                             path:'home',
@@ -87,7 +87,7 @@ function App() {
                             children: [
                                 {
                                     index:true,
-                                    element: <Navigate to='overview' />
+                                    element: <Navigate replace to='overview' />
                                 },
                                 {
                                     path:'overview',
@@ -95,7 +95,7 @@ function App() {
                                     children: [
                                         {
                                             index: true,
-                                            element: <Navigate to='building' />,
+                                            element: <Navigate replace to='building' />,
                                         },
                                         {
                                             path:'building',
@@ -121,7 +121,7 @@ function App() {
                                     children: [
                                         {
                                             index: true,
-                                            element: <Navigate to='dashboard' />,
+                                            element: <Navigate replace to='dashboard' />,
                                         },
                                         {
                                             path: 'dashboard',
@@ -163,7 +163,7 @@ function App() {
                             children: [
                                 {
                                     index:true,
-                                    element: <Navigate to='overview' />
+                                    element: <Navigate replace to='overview' />
                                 },
                                 {
                                     path:'overview',
@@ -179,7 +179,7 @@ function App() {
                                     children: [
                                         {
                                             index: true,
-                                            element: <Navigate to='leak-repair' />,
+                                            element: <Navigate replace to='leak-repair' />,
                                         },
                                         {
                                             path:'leak-repair',
@@ -208,7 +208,7 @@ function App() {
                             children: [
                                 {
                                     index:true,
-                                    element: <Navigate to='overview' />
+                                    element: <Navigate replace to='overview' />
                                 },
                                 {
                                     path:'overview',
@@ -257,7 +257,7 @@ function App() {
                             children:[
                                 {
                                     index:true,
-                                    element: <Navigate to='products' />
+                                    element: <Navigate replace to='products' />
                                 },
                                 {
                                     path:'products',
@@ -265,7 +265,7 @@ function App() {
                                     children:[
                                         {
                                             index:true,
-                                            element:<Navigate to='product-list' />
+                                            element:<Navigate replace to='product-list' />
                                         },
                                         {
                                             path:'product-list',
@@ -287,7 +287,7 @@ function App() {
                                     children: [
                                         {
                                             index:true,
-                                            element:<Navigate to='order-history' />
+                                            element:<Navigate replace to='order-history' />
                                         },
                                         {
                                             path:'order-history',

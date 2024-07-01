@@ -18,7 +18,7 @@ export default function TransferCaspioData() {
     const [loading, setLoading] = useState(false);
     const [pageNumber, setPageNumber] = useState(1);
     const [records, setRecords] = useState(0);
-    const table = 'WO1_Work_Order_Details';
+    const table = 'E3_All_Invoicing';
     const url = `https://c1acl820.caspio.com/rest/v2/tables/${table}/records`;
     
 
@@ -29,7 +29,7 @@ export default function TransferCaspioData() {
         setLoading(true);
         setRecords(p=>0);
         let page = 1;
-        const pageSize = 500; // minimum 5 and max 500
+        const pageSize = 250; // minimum 5 and max 500
 
 
 

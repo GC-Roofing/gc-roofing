@@ -19,7 +19,7 @@ export default function WorkOrderInvoicingContractExtensiveRepair() {
     );
 
     const tableInfo = {
-        collectionName: 'C2_Contracts_Table',
+        collectionNames: ['C2_Contracts_Table'],
         title: 'Contract & Extensive Repair Invoicing Report',
         labels: [
             {
@@ -63,7 +63,7 @@ export default function WorkOrderInvoicingContractExtensiveRepair() {
                 renderer:(v) => <ButtonLink href={v}>CompanyCam Link</ButtonLink>,
             },
             {
-                name:'PDF', key:'Drive_Link', hideSearch:true,
+                name:'PDF', key:'Drive_Link_PDF', hideSearch:true,
                 renderer:(v) => <ButtonLink href={v}>View Contract</ButtonLink>,
             },
             

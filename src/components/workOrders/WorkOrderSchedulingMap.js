@@ -42,7 +42,8 @@ function APIMap() {
     const [data, setData] = useState(); // data to get from query
     // useMemo
     const geocodes = useMemo(() => {
-        return data?.map((v, i) => v.data().coordinates);
+        console.log(data)
+        return data?.map((v, i) => v.data.coordinates)||[];
     }, [data])
 
 
@@ -129,7 +130,7 @@ function APIMap() {
                 >
                 <Map mapId='94b3e10296906c3b' defaultCenter={fresno} defaultZoom={10} options={mapOptions}>
                     {data?.map((v, i) => (
-                        <CustomInfoMarker key={i} data={v.data()} />
+                        <CustomInfoMarker key={i} data={v.data} />
                     ))}
                 </Map>
             </Box>

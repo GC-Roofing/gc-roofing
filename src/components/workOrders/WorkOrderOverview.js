@@ -19,7 +19,7 @@ export default function WorkOrderOverview() {
     );
 
     const tableInfo = {
-        collectionName: 'WO1_Work_Order_Details',
+        collectionNames: ['WO1_Work_Order_Details'],
         title: 'Entity Companies',
         labels: [
             {name:'Lead Tech', key:'Roof_Tech_Assigned_1'},

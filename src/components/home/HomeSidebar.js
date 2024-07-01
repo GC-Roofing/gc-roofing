@@ -17,7 +17,7 @@ export default function HomeSidebar() {
             {/* side nav */}
             <Box sx={{height: {xs: 'none', md:'100%'}, width: {xs:'100%', md:'17%'}}}>
                 <Box sx={{height: {xs:'100%', md:'30%'}}}>
-                    <SideNavbar tabs={sideTabs} initial={-1} />
+                    <SideNavbar tabs={sideTabs} initial={false} />
                 </Box>
                 {/* possible weather thing */}
                 {/*<Box

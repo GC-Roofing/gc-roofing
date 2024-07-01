@@ -18,7 +18,7 @@ export default function ProductProductList() {
     );
 
     const tableInfo = {
-        collectionName: 'I1_Manufacturer_Product_List',
+        collectionNames: ['I1_Manufacturer_Product_List'],
         title: 'Product List',
         labels: [
             {name:'MPN', key:'Product_SKU'},

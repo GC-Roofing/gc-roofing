@@ -5,7 +5,7 @@ import FirestoreDataTable from '../dataTable/FirestoreDataTable';
 export default function CustomerOverviewEntityCompanies() {
 
     const tableInfo = {
-        collectionName: 'A3_Entity_Information',
+        collectionNames: ['A3_Entity_Information'],
         title: 'Entity Companies',
         labels: [
             {

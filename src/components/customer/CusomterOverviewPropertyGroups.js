@@ -5,7 +5,7 @@ import FirestoreDataTable from '../dataTable/FirestoreDataTable';
 export default function CusomterOverviewPropertyGroups() {
 
     const tableInfo = {
-        collectionName: 'A4_Property_IDs',
+        collectionNames: ['A4_Property_IDs'],
         title: 'Property Groups & IDs',
         labels: [
             {name:'Group ID', key:'Property_ID'},

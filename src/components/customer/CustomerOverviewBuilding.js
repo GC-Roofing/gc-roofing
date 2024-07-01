@@ -5,7 +5,7 @@ import FirestoreDataTable from '../dataTable/FirestoreDataTable';
 export default function CustomerOverviewBuilding() {
 
     const tableInfo = {
-        collectionName: 'A1_Building_Information',
+        collectionNames: ['A1_Building_Information'],
         title: 'Customer / Building Information',
         labels: [
             {name:'Property Name', key:'Property_Name'},

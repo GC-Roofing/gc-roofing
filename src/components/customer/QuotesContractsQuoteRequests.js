@@ -5,7 +5,7 @@ import FirestoreDataTable from '../dataTable/FirestoreDataTable';
 export default function QuotesContractsQuoteRequests() {
 
     const tableInfo = {
-        collectionName: 'C3_Contracts_Quote_Table_Request',
+        collectionNames: ['C3_Contracts_Quote_Table_Request'],
         title: 'Quote Requests',
         labels: [
             {name:'Assigned', key:'Assigned_Estimator'},

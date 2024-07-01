@@ -2,15 +2,12 @@
 import FirestoreDataTable from '../dataTable/FirestoreDataTable';
 
 
-
 export default function Home() {
-    // initialize
-    const collectionName = 'WO2_Work_Order_Calendar';
 
     // state
     const tableInfo = {
         title: 'Stop Priority',
-        collectionName: collectionName,
+        collectionNames: ['WO2_Work_Order_Calendar'],
         labels: [
             {
                 name:'Start Date', key:'Start_Date',
@@ -34,8 +31,6 @@ export default function Home() {
             {name:'Status', key:'Status'},
         ]
     };
-
-
 
     return (
         <>

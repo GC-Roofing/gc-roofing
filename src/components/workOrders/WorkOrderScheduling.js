@@ -19,7 +19,7 @@ export default function WorkOrderScheduling({updateData}) {
     );
 
     const tableInfo = {
-        collectionName: 'WO1_Work_Order_Details',
+        collectionNames: ['WO1_Work_Order_Details'],
         title: 'Entity Companies',
         updateData: updateData,
         initialOrderBy: 'Status',
@@ -55,6 +55,7 @@ export default function WorkOrderScheduling({updateData}) {
                 name:'Dropbox', key:'WO_Folder', hideSearch:true,
                 renderer:(v) => <ButtonLink href={v}>Link</ButtonLink>,
             },
+            {name:'Coordinates', key:'coordinates', hideSearch:true, hideRender:true}
         ]
     }
 
