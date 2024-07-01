@@ -27,4 +27,4 @@ export const auth = getAuth(firebase);
 export const functions = getFunctions(firebase);
 
 
-connectFunctionsEmulator(functions, "127.0.0.1", 5001);
+// connectFunctionsEmulator(functions, "127.0.0.1", 5001);
