@@ -496,16 +496,19 @@ function CollapsibleRow({group, labels, handleMenuOpen}) {
                             },
                         }}
                         >
+                        {/* arrow */}
                         <TableCell sx={{fontSize:'.75rem'}}>
                             <Box sx={{display:'flex', alignItems:'center', height:'100%'}}>
                                 <KeyboardArrowUpIcon sx={{visibility:'hidden'}} />
                             </Box>
                         </TableCell>
+                        {/* cells */}
                         {labels.map((v, i) => {
                             if (v.hideRender) return null;
                             const renderFunc = (v?.renderer) ? v?.renderer : v?.converter;
                             return <TableCell key={i} sx={{fontSize:'.75rem'}}>{renderFunc?.call(undefined,data[v.key])||data[v.key]}</TableCell>
                         })}
+                        {/* menu */}
                         <TableCell align="center">
                             <IconButton 
                                 data-record-id={bi.id} 
