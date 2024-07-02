@@ -87,7 +87,7 @@ export default function FirestoreDataTable({
     const [openFilter, setOpenFilter] = useState(true);
     const [filterText, setFilterText] = useState(labels.reduce((o, v) => ({...o, [v.key]: (v.key===initialFilter?.key) ? initialFilter?.value : ''}), {}));
     const [debounced, setDebounced] = useState(false);
-    const [groupByOrder, setGroupByOrder] = useState(initialGroupByOrder);
+    const [groupByOrder, setGroupByOrder] = useState(initialGroupByOrder||[orderDirection]);
 
     // async function for filtering and sorting
     const getInfo = useCallback(async (collectionNames, relations, pageNum, pageSize, orderObj, orderDirection, filterText, labels, groupBy, groupByOrder) => {
