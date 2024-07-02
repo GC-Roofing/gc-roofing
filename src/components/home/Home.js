@@ -8,6 +8,8 @@ export default function Home() {
     const tableInfo = {
         title: 'Stop Priority',
         collectionNames: ['WO2_Work_Order_Calendar'],
+        groupBy: ['Start_Date'],
+        groupByOrder: ['desc'],
         labels: [
             {
                 name:'Start Date', key:'Start_Date',

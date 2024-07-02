@@ -34,6 +34,8 @@ exports.filterData = onCall({ cors: ['https://gc-roofing.web.app', "http://local
     const filter = query.filter;
     const pageNum = query.pageNum || 1;
     const pageSize = query.pageSize || 25;
+    const groupBy = query.groupBy || [];
+    const groupByOrder = query.groupByOrder || [];
 
     // check if the collection param is correct
     if (!collectionNames) {
@@ -92,19 +94,33 @@ exports.filterData = onCall({ cors: ['https://gc-roofing.web.app', "http://local
                 });
             });
         }
-        
+
+        // get the total length
+        const filteredLength = filteredResults.length;
+
         // sort the results
-        const results = filteredResults.sort(getComparator(orderDirection, orderBy));
-        const filteredLength = results.length; // get the total length
+        const sortOrder = [...groupByOrder];
+        const sortBy = [...groupBy];
+        const orderByIndex = sortBy.indexOf(orderBy);
+        if (orderByIndex !== -1) {
+            sortOrder[orderByIndex] = orderDirection;
+        } else {
+            sortOrder.push(orderDirection);
+            sortBy.push(orderBy);
+        }
+        const sortedResults = filteredResults.sort(getComparator(sortOrder, sortBy));    
 
         // limit results
         const begin = (pageNum-1) * pageSize;
         const end = pageNum*pageSize;
-        const returnResults = results.slice(begin, end);// limit the results per page
+        const slicedResults = sortedResults.slice(begin, end);// limit the results per page
+
+        // group results if groupby exists
+        const groupedResults = nestedGroupBy(slicedResults, groupBy);    
 
         // return results
         // console.log('derek Function completed successfully');
-        return {data: returnResults, length:filteredLength};
+        return {data: groupedResults, length:filteredLength, grouped: groupBy.length!==0};
         // res.status(200).send({data: returnResults, length:filteredLength});
     } catch (error) {
         console.error('derek Error fetching data:', error);
@@ -113,46 +129,53 @@ exports.filterData = onCall({ cors: ['https://gc-roofing.web.app', "http://local
 
 });
 
-function descendingComparator(a, b, orderObj) {
-    const dataA = a.data;
-    const dataB = b.data;
-    let objA = dataA[orderObj];
-    let objB = dataB[orderObj];
-    let typeA = (Number(objA))
-        ? Number(objA)
-        : ((new Date(objA)).toString() !== "Invalid Date")
-            ? new Date(objA)
-            : objA;
-    let typeB = (Number(objB))
-        ? Number(objB)
-        : ((new Date(objB)).toString() !== "Invalid Date")
-            ? new Date(objB)
-            : objB;
+function descendingComparator(a, b, orders, orderObjs) {
+    let i = 0;
+    for (let orderObj of orderObjs) {
+        const dataA = a.data;
+        const dataB = b.data;
+        let objA = dataA[orderObj];
+        let objB = dataB[orderObj];
+        let typeA = (Number(objA))
+            ? Number(objA)
+            : ((new Date(objA)).toString() !== "Invalid Date")
+                ? new Date(objA)
+                : objA;
+        let typeB = (Number(objB))
+            ? Number(objB)
+            : ((new Date(objB)).toString() !== "Invalid Date")
+                ? new Date(objB)
+                : objB;
 
-    if (typeB < typeA) {
-        return -1;
+        if (typeB < typeA) {
+            return (orders[i] === 'asc') ? 1 : -1;
+        }
+        if (typeB > typeA) {
+            return (orders[i] === 'asc') ? -1 : 1;
+        }
+
+        i++;
     }
-    if (typeB > typeA) {
-        return 1;
-    }
-        return 0;
+
+    return 0;
 }
 
-function getComparator(order, orderObj) {
+function getComparator(orders, orderObjs) {
     // 1 is ascending
     // 0 is descending
-    return order === 'asc'
-        ? (a, b) => -descendingComparator(a, b, orderObj)
-        : (a, b) => descendingComparator(a, b, orderObj);
+    return (a, b) => descendingComparator(a, b, orders, orderObjs);
+    // return order === 'asc'
+    //     ? (a, b) => -descendingComparator(a, b, orderObjs)
+    //     : (a, b) => descendingComparator(a, b, orderObjs);
 }
 
 
 function innerJoin(leftData, rightData, joinOn) {
     let rightDataJoin = new Set(rightData.map(d => d.data[joinOn]));
-    leftData = leftData.filter(d => rightDataJoin.has(d.data[joinOn])).sort(getComparator('asc', joinOn));
+    leftData = leftData.filter(d => rightDataJoin.has(d.data[joinOn])).sort(getComparator(['asc'], [joinOn]));
 
     let leftDataJoin = new Set(leftData.map(d => d.data[joinOn]));
-    rightData = rightData.filter(d => leftDataJoin.has(d.data[joinOn])).sort(getComparator('asc', joinOn));
+    rightData = rightData.filter(d => leftDataJoin.has(d.data[joinOn])).sort(getComparator(['asc'], [joinOn]));
 
     return leftData.map((d, i) => {
         let omitNull = obj => {
@@ -172,7 +195,7 @@ function innerJoin(leftData, rightData, joinOn) {
 
 function leftJoin(leftData, rightData, joinOn) {
     let leftDataJoin = new Set(rightData.map(d => d.data[joinOn]));
-    rightData = rightData.filter(d => leftDataJoin.has(d.data[joinOn])).sort(getComparator('asc', joinOn));
+    rightData = rightData.filter(d => leftDataJoin.has(d.data[joinOn])).sort(getComparator(['asc'], [joinOn]));
     return leftData.map((d, i) => {
         let omitNull = obj => {
             if (!obj) return {};
@@ -192,7 +215,7 @@ function leftJoin(leftData, rightData, joinOn) {
 
 function rightJoin(leftData, rightData, joinOn) {
     let rightDataJoin = new Set(rightData.map(d => d.data[joinOn]));
-    leftData = leftData.filter(d => rightDataJoin.has(d.data[joinOn])).sort(getComparator('asc', joinOn));
+    leftData = leftData.filter(d => rightDataJoin.has(d.data[joinOn])).sort(getComparator(['asc'], [joinOn]));
     return rightData.map((d, i) => {
         let omitNull = obj => {
             if (obj === null) return {};
@@ -208,6 +231,38 @@ function rightJoin(leftData, rightData, joinOn) {
             }
         }
     })
+}
+
+function nestedGroupBy(data, keys) {
+    // Use reduce to iterate over each item in the data array
+    return data.reduce((acc, item) => {
+        // Use another reduce to iterate over each key in the keys array
+        keys.reduce((nestedAcc, key, index) => {
+            // Find the existing group
+            let group = nestedAcc.find(g => g.key === item.data[key]);
+            // If the group doesn't exist, create a new one
+            if (!group) {
+                group = {
+                    category: key,
+                    key: item.data[key],
+                    value: []
+                };
+                nestedAcc.push(group);
+            }
+            // Move to the next level of nesting
+            return group.value;
+        }, acc).push(item);
+        // Return the updated accumulator object
+        return acc;
+    }, []); // Start with an empty array for the outer reduce
+}
+
+
+const merge = (a, b, predicate = (a, b) => a === b) => {
+    const c = [...a]; // copy to avoid side effects
+    // add all items from B to copy C if they're not already present
+    b.forEach((bItem) => (c.some((cItem) => predicate(bItem, cItem)) ? null : c.push(bItem)))
+    return c;
 }
 
 

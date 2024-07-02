@@ -328,20 +328,31 @@ function App() {
         }
     ]);
 
-    const theme = createTheme({
+    let theme = createTheme();
+
+    theme = createTheme(theme, {
         palette: {
-            red: {
-                main: '#FC1515',
-            },
-            darkRed: {
-                main: '#D60000',
-            },
+            red: theme.palette.augmentColor({
+                color: {
+                    main: '#FC1515',
+                },
+                name:'red',
+            }),
+            darkRed: theme.palette.augmentColor({
+                color: {
+                    main: '#D60000',
+                },
+                name:'red',
+            }),
             white: {
                 main: '#FFFFFF',
             },
-            offGrey: {
-                main: '#D3D3D3'
-            },
+            offGrey: theme.palette.augmentColor({
+                color: {
+                    main: '#D3D3D3'
+                },
+                name:'red',
+            }),
         },
     });
 
