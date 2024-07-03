@@ -26,7 +26,7 @@ export default function WorkOrderInvoicingContractExtensiveRepair() {
                 name:'Contract Date', key:'Contract_Date', hideSearch:true,
                 converter: (v) => {
                     if (v) {
-                        const date = new Date(v);
+                        const date = new Date(v.slice(0,-1));
                         return (date.getMonth()+1) + '/' + date.getDate() + '/' + date.getFullYear();
                     }
                 },
@@ -46,7 +46,7 @@ export default function WorkOrderInvoicingContractExtensiveRepair() {
                 name:'Signed Date', key:'Contract_signed_Date', hideSearch:true,
                 converter: (v) => {
                     if (v) {
-                        const date = new Date(v);
+                        const date = new Date(v.slice(0,-1));
                         return (date.getMonth()+1) + '/' + date.getDate() + '/' + date.getFullYear();
                     }
                 },

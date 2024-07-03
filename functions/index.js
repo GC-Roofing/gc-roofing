@@ -36,6 +36,8 @@ exports.filterData = onCall({ cors: ['https://gc-roofing.web.app', "http://local
     const pageSize = query.pageSize || 25;
     const groupBy = query.groupBy || [];
     const groupByOrder = query.groupByOrder || [];
+    const dataFunc = eval(query.dataFunc);
+
     // check if the collection param is correct
     if (!collectionNames) {
         throw new HttpsError('invalid-argument', "Select is required.");
@@ -94,26 +96,37 @@ exports.filterData = onCall({ cors: ['https://gc-roofing.web.app', "http://local
             });
         }
 
-        // get the total length
-        const filteredLength = filteredResults.length;
-
         // sort the results
-        const sortOrder = [...groupByOrder];
-        const sortBy = [...groupBy];
-        const orderByIndex = sortBy.indexOf(orderBy);
-        if (orderByIndex !== -1) {
-            sortOrder[orderByIndex] = orderDirection;
-        } else {
-            sortOrder.push(orderDirection);
-            sortBy.push(orderBy);
-        }
+        let sortOrder = [...groupByOrder];
+        let sortBy = [...groupBy];
+        sortOrder.push(orderDirection); // include orderdirection
+        sortBy.push(orderBy); // include orderby
+        let sortedResults = filteredResults.sort(getComparator(sortOrder, sortBy)); // sort
 
-        const sortedResults = filteredResults.sort(getComparator(sortOrder, sortBy));    
+        // datafunc manipulate results
+        let dataFuncResults;
+        if (dataFunc) {
+            dataFuncResults = dataFunc(sortedResults);
+
+            // sort the results
+            sortOrder = [...groupByOrder];
+            sortBy = [...groupBy];
+            sortOrder.push(orderDirection); // include orderdirection
+            sortBy.push(orderBy); // include orderby
+            sortedResults = dataFuncResults.sort(getComparator(sortOrder, sortBy)); // sort
+
+        }
+        
+
+        // get the total length
+        const filteredLength = sortedResults.length;
 
         // limit results
         const begin = (pageNum-1) * pageSize;
         const end = pageNum*pageSize;
         const slicedResults = sortedResults.slice(begin, end);// limit the results per page
+
+        console.log(slicedResults)
 
         // group results if groupby exists
         const groupedResults = nestedGroupBy(slicedResults, groupBy);    
@@ -259,12 +272,12 @@ function nestedGroupBy(data, keys) {
 }
 
 
-const merge = (a, b, predicate = (a, b) => a === b) => {
-    const c = [...a]; // copy to avoid side effects
-    // add all items from B to copy C if they're not already present
-    b.forEach((bItem) => (c.some((cItem) => predicate(bItem, cItem)) ? null : c.push(bItem)))
-    return c;
-}
+// const merge = (a, b, predicate = (a, b) => a === b) => {
+//     const c = [...a]; // copy to avoid side effects
+//     // add all items from B to copy C if they're not already present
+//     b.forEach((bItem) => (c.some((cItem) => predicate(bItem, cItem)) ? null : c.push(bItem)))
+//     return c;
+// }
 
 
 

@@ -78,11 +78,11 @@ export default function FirestoreDataTable({
     const [filteredLength, setFilteredLength] = useState(0);
     const [pageSize, setPageSize] = useState(25); // state for number of rows on a page
     const [pageNum, setPageNum] = useState(1); // state for page number
-    const [orderObj, setOrderObj] = useState(initialOrderObj||labels[0].key); // state for order by //not being used
+    const [orderObj, setOrderObj] = useState(initialOrderObj||labels[groupBy?.length||0].key); // state for order by //not being used
     const [loading, setLoading] = useState(true); // check if still loading
     const [anchorEl, setAnchorEl] = useState(null); // anchor menu
     const [selectedRecord, setSelectedRecord] = useState(null); // which record is selected for the menu
-    const [orderDirection, setOrderDirection] = useState(initialOrderDirection||initialGroupByOrder?.at(0)||'asc'); // order direction
+    const [orderDirection, setOrderDirection] = useState(initialOrderDirection||'asc'); // order direction
     const [openDelete, setOpenDelete] = useState(false);
     const [openFilter, setOpenFilter] = useState(true);
     const [filterText, setFilterText] = useState(labels.reduce((o, v) => ({...o, [v.key]: (v.key===initialFilter?.key) ? initialFilter?.value : ''}), {}));
@@ -90,7 +90,7 @@ export default function FirestoreDataTable({
     const [groupByOrder, setGroupByOrder] = useState(initialGroupByOrder||(groupBy && Array(groupBy.length).fill('desc'))||[orderDirection]);
 
     // async function for filtering and sorting
-    const getInfo = useCallback(async (collectionNames, relations, pageNum, pageSize, orderObj, orderDirection, filterText, labels, groupBy, groupByOrder) => {
+    const getInfo = useCallback(async (collectionNames, relations, pageNum, pageSize, orderObj, orderDirection, filterText, labels, groupBy, groupByOrder, dataFunc) => {
         try {
             // get callable function and data
             const filterData = httpsCallable(functions, 'filterData');
@@ -105,13 +105,13 @@ export default function FirestoreDataTable({
                 labels:labels,
                 groupBy:groupBy,
                 groupByOrder:groupByOrder,
+                dataFunc:dataFunc?.toString(),
             });
             const data = result.data; // result.data is because it is the data of the results
             setInfo(data.data); // data.data is because i have an object {data: obj, length: num}
             setFilteredLength(data.length); // set the total length
             updateData && updateData(info => data.data); // this is if someone wants to access the data in the table
             setLoading(false);
-            console.log(groupByOrder)
         } catch(e) {
             console.log(e.message);
         }
@@ -125,11 +125,11 @@ export default function FirestoreDataTable({
     useEffect(() => {
         setLoading(true);
         if (debounced) {
-            debouncedInfo(collectionNames, relations, pageNum, pageSize, orderObj, orderDirection, filterText, labels, groupBy, groupByOrder);
+            debouncedInfo(collectionNames, relations, pageNum, pageSize, orderObj, orderDirection, filterText, labels, groupBy, groupByOrder, dataFunc);
         } else {
-            getInfo(collectionNames, relations, pageNum, pageSize, orderObj, orderDirection, filterText, labels, groupBy, groupByOrder);
+            getInfo(collectionNames, relations, pageNum, pageSize, orderObj, orderDirection, filterText, labels, groupBy, groupByOrder, dataFunc);
         }
-    }, [getInfo, debounced, debouncedInfo, collectionNames, relations, pageNum, pageSize, orderObj, orderDirection, filterText, labels, groupBy, groupByOrder])
+    }, [getInfo, debounced, debouncedInfo, collectionNames, relations, pageNum, pageSize, orderObj, orderDirection, filterText, labels, groupBy, groupByOrder, dataFunc])
 
 
     // handlers
@@ -175,8 +175,9 @@ export default function FirestoreDataTable({
         if (groupBy?.includes(ob)) {
             const groupByIndex = groupBy.indexOf(ob);
             setGroupByOrder((d) => {
-                d[groupByIndex] = d[groupByIndex] === 'asc' ? 'desc' : 'asc';
-                return [...d];
+                const newOrder = [...d]
+                newOrder[groupByIndex] = newOrder[groupByIndex] === 'asc' ? 'desc' : 'asc';
+                return newOrder;
             });
         } else {
             setOrderObj(ob);
@@ -480,7 +481,7 @@ function CollapsibleRowRecursion({priorOpen=true, group, labels, handleMenuOpen,
                 }}
                 >
                 {/* cells */}
-                {[...Array(value-1).keys()].map((v, i) => (
+                {[...Array(value-1||1).keys()].map((v, i) => (
                     <TableCell
                         key={i}
                         sx={{

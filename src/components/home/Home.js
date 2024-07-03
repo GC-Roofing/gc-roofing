@@ -1,26 +1,54 @@
+import {useCallback} from 'react';
 
 import FirestoreDataTable from '../dataTable/FirestoreDataTable';
 
 
 export default function Home() {
 
+
+    const dataFunc = useCallback((data) => {
+        const today = (new Date()).toISOString().slice(0, 10);
+        const copyData = data.filter(v => v.data.End_Date >= today);
+        const returnData = [];
+
+        for (let data of copyData) {
+            let currDate = new Date(data.data.Start_Date);
+            let endDate = new Date(data.data.End_Date);
+
+            while (currDate <= endDate) {
+                returnData.push({
+                    id: data.id, 
+                    data: {
+                        ...data.data,
+                        Start_Date: currDate.toISOString(),
+                    },
+                });
+
+                currDate.setDate(currDate.getDate() + 1);
+            }
+        }
+
+        return returnData.filter(v => v.data.Start_Date >= today);
+    }, []);
+
     // state
     const tableInfo = {
         title: 'Stop Priority',
         collectionNames: ['WO2_Work_Order_Calendar'],
-        groupBy: ['Start_Date', 'Roof_Tech_Assigned_1'],
-        initialGroupByOrder: ['desc'],
+        groupBy: ['Start_Date'],
+        initialGroupByOrder: ['asc'],
         labels: [
             {
-                name:'Start Date', key:'Start_Date',
+                name:'Date', key:'Start_Date',
                 converter: (v) => {
                     if (v) {
-                        const date = new Date(v);
+                        const date = new Date(v.slice(0,-1));
                         return (date.getMonth()+1) + '/' + date.getDate() + '/' + date.getFullYear();
                     }
                 },
                 reverter: (v) => v.replaceAll('/', ' '),
             },
+            {name:'End Date', key:'End_Date', hideRender:true, hideSearch:true},
             {name:'Lead Tech', key:'Roof_Tech_Assigned_1'},
             {name:'Stop #', key:'Stop_Priority'},
             {name:'WO Number', key:'WO_Number'},
@@ -36,7 +64,7 @@ export default function Home() {
 
     return (
         <>
-            <FirestoreDataTable {...tableInfo} />
+            <FirestoreDataTable {...tableInfo} dataFunc={dataFunc} />
         </>
     );
 }

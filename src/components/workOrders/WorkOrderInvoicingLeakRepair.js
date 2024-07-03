@@ -40,7 +40,7 @@ export default function WorkOrderInvoicingLeakRepair() {
                 name:'Job End Date', key:'End_Date', hideSearch:true,
                 converter: (v) => {
                     if (v) {
-                        const date = new Date(v);
+                        const date = new Date(v.slice(0,-1));
                         return (date.getMonth()+1) + '/' + date.getDate() + '/' + date.getFullYear();
                     }
                 },
@@ -84,7 +84,7 @@ export default function WorkOrderInvoicingLeakRepair() {
                 name:'Invoice Sent Date', key:'Invoice_Date', hideSearch:true,
                 converter: (v) => {
                     if (v) {
-                        const date = new Date(v);
+                        const date = new Date(v.slice(0,-1));
                         return (date.getMonth()+1) + '/' + date.getDate() + '/' + date.getFullYear();
                     }
                 },

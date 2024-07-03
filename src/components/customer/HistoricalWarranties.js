@@ -14,7 +14,7 @@ export default function HistoricalWarranties() {
                 name:'Date Entered', key:'DateEntered',
                 converter: (v) => {
                     if (v) {
-                        const date = new Date(v);
+                        const date = new Date(v.slice(0,-1));
                         return (date.getMonth()+1) + '/' + date.getDate() + '/' + date.getFullYear();
                     }
                 },
@@ -29,7 +29,7 @@ export default function HistoricalWarranties() {
                 name:'Effective Date', key:'Effective_Date', hideSearch: true,
                 converter: (v) => {
                     if (v) {
-                        const date = new Date(v);
+                        const date = new Date(v.slice(0,-1));
                         return (date.getMonth()+1) + '/' + date.getDate() + '/' + date.getFullYear();
                     }
                 },
@@ -40,7 +40,7 @@ export default function HistoricalWarranties() {
                 name:'Material Expiration', key:'Material_Expiration', hideSearch: true,
                 converter: (v) => {
                     if (v) {
-                        const date = new Date(v);
+                        const date = new Date(v.slice(0,-1));
                         return (date.getMonth()+1) + '/' + date.getDate() + '/' + date.getFullYear();
                     }
                 },
@@ -51,7 +51,7 @@ export default function HistoricalWarranties() {
                 name:'Contractor Expiration', key:'Contractor_Expiration', hideSearch: true,
                 converter: (v) => {
                     if (v) {
-                        const date = new Date(v);
+                        const date = new Date(v.slice(0,-1));
                         return (date.getMonth()+1) + '/' + date.getDate() + '/' + date.getFullYear();
                     }
                 },
@@ -65,7 +65,7 @@ export default function HistoricalWarranties() {
                 name:'Recoat Reminder', key:'RecoatReminder',
                 converter: (v) => {
                     if (v) {
-                        const date = new Date(v);
+                        const date = new Date(v.slice(0,-1));
                         return (date.getMonth()+1) + '/' + date.getDate() + '/' + date.getFullYear();
                     }
                 },

@@ -1,3 +1,4 @@
+import {useEffect} from 'react';
 import {Outlet} from 'react-router-dom';
 
 import SideNavbar from '../navbar/SideNavbar';
@@ -10,7 +11,17 @@ import Box from '@mui/material/Box';
 
 
 export default function HomeSidebar() {
+    useEffect(() => {
+        const script = document.createElement('script');
+        script.id = 'weatherwidget-io-js';
+        script.src = 'https://weatherwidget.io/js/widget.min.js';
+        script.async = true;
+        document.head.appendChild(script);
 
+        return () => {
+          document.head.removeChild(script);
+        };
+  }, []);
 
     return (
         <Box sx={{height:'100%', display:'flex', flexDirection: {xs: 'column', md:'row'}, overflow:'hidden'}}>
@@ -20,26 +31,25 @@ export default function HomeSidebar() {
                     <SideNavbar tabs={sideTabs} initial={false} />
                 </Box>
                 {/* possible weather thing */}
-                {/*<Box
+                <Box
                     sx={{
                         width: '100%',
-                        height: '500px', // Adjust the height as needed
-                        border: '1px solid #ccc', // Optional: Add border to iframe
-                        borderRadius: '8px', // Optional: Add border-radius for rounded corners
-                        overflow: 'hidden', // Prevent overflow
-                        boxShadow: 2, // Add box shadow
+                        height: {xs:'100%', md:'70%'}, // Adjust the height as needed
+                        px:'10%',
+                        pb:'10%',
+                        overflow:'hidden',
                     }}
                     >
-                    <iframe
-                        src="https://forecast7.com/en/36d75n119d77/fresno/?unit=us"
-                        width="100%"
-                        height="100%"
-                        style={{ border: 0 }}
-                        allowFullScreen
-                        loading="lazy"
-                        title="Weather Forecast"
-                        />
-                </Box>*/}
+                    <Box
+                        sx={{
+                            width:'100%',
+                            height:'100%',
+                            overflow:'scroll',
+                        }}
+                        >
+                        <a className="weatherwidget-io" href="https://forecast7.com/en/36d75n119d77/fresno/?unit=us"  data-label_1="FRESNO" data-label_2="WEATHER" data-font="Roboto" data-theme="pure" >FRESNO WEATHER</a>
+                    </Box>
+                </Box>
             </Box>
             {/* content */}
             <Box sx={{width:{xs:'100%', md:'83%'}, overflow:'scroll', height:{xs: 'none', md:'100%'}}} >
