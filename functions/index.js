@@ -36,7 +36,7 @@ exports.filterData = onCall({ cors: ['https://gc-roofing.web.app', "http://local
     const pageSize = query.pageSize || 25;
     const groupBy = query.groupBy || [];
     const groupByOrder = query.groupByOrder || [];
-    const dataFunc = eval(query.dataFunc);
+    const dataFunc = eval(query.dataFunc) || ((v) => v);
 
     // check if the collection param is correct
     if (!collectionNames) {
@@ -82,9 +82,11 @@ exports.filterData = onCall({ cors: ['https://gc-roofing.web.app', "http://local
 
         // console.log('derek ------> finished joining')
 
-        let filteredResults = data;
+        // datafunc manipulate results
+        const dataFuncResults = dataFunc(data);
 
         // filter if text has been inputted into filter
+        let filteredResults = dataFuncResults;
         if (filter && Object.values(filter).some(x => x !== '')) {
             filteredResults = data.filter((vf, i) => {// filter out the values that do not satisfy the filter
                 return labels.every(l => {// checks if data matches the filter or not. (all have to be satisfied by the filter text)
@@ -103,21 +105,6 @@ exports.filterData = onCall({ cors: ['https://gc-roofing.web.app', "http://local
         sortBy.push(orderBy); // include orderby
         let sortedResults = filteredResults.sort(getComparator(sortOrder, sortBy)); // sort
 
-        // datafunc manipulate results
-        let dataFuncResults;
-        if (dataFunc) {
-            dataFuncResults = dataFunc(sortedResults);
-
-            // sort the results
-            sortOrder = [...groupByOrder];
-            sortBy = [...groupBy];
-            sortOrder.push(orderDirection); // include orderdirection
-            sortBy.push(orderBy); // include orderby
-            sortedResults = dataFuncResults.sort(getComparator(sortOrder, sortBy)); // sort
-
-        }
-        
-
         // get the total length
         const filteredLength = sortedResults.length;
 
@@ -125,8 +112,6 @@ exports.filterData = onCall({ cors: ['https://gc-roofing.web.app', "http://local
         const begin = (pageNum-1) * pageSize;
         const end = pageNum*pageSize;
         const slicedResults = sortedResults.slice(begin, end);// limit the results per page
-
-        console.log(slicedResults)
 
         // group results if groupby exists
         const groupedResults = nestedGroupBy(slicedResults, groupBy);    
