@@ -42,7 +42,7 @@ export default function HomeSidebar() {
                 </Box>*/}
             </Box>
             {/* content */}
-            <Box sx={{flexGrow:1, overflow:'scroll'}} >
+            <Box sx={{width:{xs:'100%', md:'83%'}, overflow:'scroll', height:{xs: 'none', md:'100%'}}} >
                 <Outlet />
             </Box>
         </Box>

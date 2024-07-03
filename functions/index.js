@@ -36,7 +36,6 @@ exports.filterData = onCall({ cors: ['https://gc-roofing.web.app', "http://local
     const pageSize = query.pageSize || 25;
     const groupBy = query.groupBy || [];
     const groupByOrder = query.groupByOrder || [];
-
     // check if the collection param is correct
     if (!collectionNames) {
         throw new HttpsError('invalid-argument', "Select is required.");
@@ -108,6 +107,7 @@ exports.filterData = onCall({ cors: ['https://gc-roofing.web.app', "http://local
             sortOrder.push(orderDirection);
             sortBy.push(orderBy);
         }
+
         const sortedResults = filteredResults.sort(getComparator(sortOrder, sortBy));    
 
         // limit results
@@ -243,6 +243,7 @@ function nestedGroupBy(data, keys) {
             // If the group doesn't exist, create a new one
             if (!group) {
                 group = {
+                    group:true,
                     category: key,
                     key: item.data[key],
                     value: []

@@ -24,7 +24,7 @@ export default function CustomerSidebar() {
                 <SideNavbar tabs={sideTabs} initial={currTabIndex} />
             </Box>
             {/* content */}
-            <Box sx={{width:'83%', overflow:'hidden', height:{xs: 'none', md:'100%'}}} >
+            <Box sx={{width:{xs:'100%', md:'83%'}, overflow:'hidden', height:{xs: 'none', md:'100%'}}} >
                 <Outlet />
             </Box>
         </Box>

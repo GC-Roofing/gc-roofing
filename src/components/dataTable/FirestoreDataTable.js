@@ -42,8 +42,8 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 
 export default function FirestoreDataTable({
         title, collectionNames, relations, labels, groupBy, initialGroupByOrder,
-        updateData=null, dataFunc=null,
-        initialOrderObj=null, initialOrderDirection='asc', initialFilter=null,
+        updateData, dataFunc,
+        initialOrderObj, initialOrderDirection, initialFilter,
         padding='4%'
     }) {
     /*
@@ -82,12 +82,12 @@ export default function FirestoreDataTable({
     const [loading, setLoading] = useState(true); // check if still loading
     const [anchorEl, setAnchorEl] = useState(null); // anchor menu
     const [selectedRecord, setSelectedRecord] = useState(null); // which record is selected for the menu
-    const [orderDirection, setOrderDirection] = useState(initialOrderDirection); // order direction
+    const [orderDirection, setOrderDirection] = useState(initialOrderDirection||initialGroupByOrder?.at(0)||'asc'); // order direction
     const [openDelete, setOpenDelete] = useState(false);
     const [openFilter, setOpenFilter] = useState(true);
     const [filterText, setFilterText] = useState(labels.reduce((o, v) => ({...o, [v.key]: (v.key===initialFilter?.key) ? initialFilter?.value : ''}), {}));
     const [debounced, setDebounced] = useState(false);
-    const [groupByOrder, setGroupByOrder] = useState(initialGroupByOrder||[orderDirection]);
+    const [groupByOrder, setGroupByOrder] = useState(initialGroupByOrder||(groupBy && Array(groupBy.length).fill('desc'))||[orderDirection]);
 
     // async function for filtering and sorting
     const getInfo = useCallback(async (collectionNames, relations, pageNum, pageSize, orderObj, orderDirection, filterText, labels, groupBy, groupByOrder) => {
@@ -111,7 +111,7 @@ export default function FirestoreDataTable({
             setFilteredLength(data.length); // set the total length
             updateData && updateData(info => data.data); // this is if someone wants to access the data in the table
             setLoading(false);
-            console.log(data)
+            console.log(groupByOrder)
         } catch(e) {
             console.log(e.message);
         }
@@ -173,10 +173,15 @@ export default function FirestoreDataTable({
     function handleTableSort({currentTarget}) {
         const ob = currentTarget.dataset.labelName;
         if (groupBy?.includes(ob)) {
-            setGroupByOrder((d) => [(d?.at(0) === 'asc' ? 'desc' : 'asc')]);
+            const groupByIndex = groupBy.indexOf(ob);
+            setGroupByOrder((d) => {
+                d[groupByIndex] = d[groupByIndex] === 'asc' ? 'desc' : 'asc';
+                return [...d];
+            });
+        } else {
+            setOrderObj(ob);
+            setOrderDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
         }
-        setOrderObj(ob);
-        setOrderDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
         setPageNum(1);
         setDebounced(false);
     }
@@ -221,6 +226,7 @@ export default function FirestoreDataTable({
 
     return (
         <Box sx={{height:'100%', width:'100%', pt:padding, display:'flex', flexDirection:'column', overflow:'hidden'}}>
+            {/* Title */}
             <Box sx={{display:'flex', alignItems:'center'}}>
                 <Typography variant='h5'>{title}</Typography>
                 <IconButton onClick={handleToggleFilter} sx={{ml:1}}>
@@ -284,14 +290,23 @@ export default function FirestoreDataTable({
                                             >
                                             <TableSortLabel
                                                 active={orderObj === v.key || groupBy?.includes(v.key)}
-                                                direction={(groupBy?.includes(v.key)) ? groupByOrder?.at(0) : orderDirection}
+                                                direction={(groupBy?.includes(v.key)) ? groupByOrder?.at(groupBy.indexOf(v.key)) : orderDirection}
                                                 onClick={handleTableSort}
                                                 data-label-name={v.key}
                                                 sx={{
                                                     '&.MuiTableSortLabel-root': {
                                                         textWrap:'wrap',
-                                                        color:'darkRed.main'
-                                                    }
+                                                        color:'darkRed.main',
+                                                        
+                                                    },
+                                                    '& .MuiTableSortLabel-icon': {
+                                                        color:'text.primary',
+                                                    },
+                                                    '&.Mui-active': {
+                                                        '& .MuiTableSortLabel-icon': {
+                                                            color: (groupBy?.includes(v.key)) ? 'darkRed.dark' : '',
+                                                        }
+                                                    },
                                                 }}
                                                 >
                                                 {v.name}
@@ -340,9 +355,9 @@ export default function FirestoreDataTable({
                             }
                             {/* Checks if group by formmating to be applied */}
                             {(!loading && groupBy) &&
-                                info?.map((group) => {
+                                info?.map((group, i) => {
                                     return (
-                                        <CollapsibleRow group={group} labels={labels} handleMenuOpen={handleMenuOpen} />
+                                        <CollapsibleRowRecursion key={i} group={group} labels={labels} handleMenuOpen={handleMenuOpen} />
                                     );
                                 })
                             }
@@ -439,8 +454,62 @@ export default function FirestoreDataTable({
 
 
 
-function CollapsibleRow({group, labels, handleMenuOpen}) {
+// 
+
+
+function CollapsibleRowRecursion({priorOpen=true, group, labels, handleMenuOpen, value=0}) {
     const [open, setOpen] = useState(true);
+    if (!group.group) {
+        let data = group;
+        return (
+            <TableRow
+                hover
+                key={data.id}
+                onClick={()=>null}
+                sx={{ 
+                    animation: 'fadeInAnimation ease .5s',
+                    "@keyframes fadeInAnimation": {
+                        '0%': {
+                            opacity: 0,
+                        },
+                        '100%': {
+                            opacity: 1,
+                        },
+                    },
+                    display:priorOpen ? 'auto' : 'none',
+                }}
+                >
+                {/* cells */}
+                {[...Array(value-1).keys()].map((v, i) => (
+                    <TableCell
+                        key={i}
+                        sx={{
+                            '&.MuiTableCell-root': {
+                                bgcolor:'background.paper',
+                                border: 0
+                            }
+                        }}
+                    />
+                ))}
+                {labels.map((v, i) => {
+                    if (v.hideRender || i<value-2) return null;
+                    const renderFunc = (v?.renderer) ? v?.renderer : v?.converter;
+                    return <TableCell key={i} sx={{fontSize:'.75rem'}}>{renderFunc?.call(undefined,data.data[v.key])||data.data[v.key]}</TableCell>
+                })}
+                {/* menu */}
+                <TableCell align="center">
+                    <IconButton 
+                        data-record-id={data.id} 
+                        size='small'
+                        onClick={handleMenuOpen}
+                        >
+                        <MoreVertRoundedIcon fontSize='small' />
+                    </IconButton>
+                </TableCell>
+            </TableRow>
+        );
+    }
+
     const label = labels.filter(v => v.key===group.category)[0];
     const renderHead = (label?.renderer) ? label?.renderer : label?.converter;
     return (
@@ -460,10 +529,31 @@ function CollapsibleRow({group, labels, handleMenuOpen}) {
                         '&:hover': {
                             bgcolor:'offGrey.dark',
                         }
-                    }
+                    },
+                    animation: 'fadeInAnimation ease .5s',
+                    "@keyframes fadeInAnimation": {
+                        '0%': {
+                            opacity: 0,
+                        },
+                        '100%': {
+                            opacity: 1,
+                        },
+                    },
+                    display:priorOpen ? 'auto' : 'none',
                 }}
                 >
                 {/* Arrow */}
+                {[...Array(value).keys()].map((v, i) => (
+                    <TableCell
+                        key={i}
+                        sx={{
+                            '&.MuiTableCell-root': {
+                                bgcolor:'background.paper',
+                                border: 0
+                            }
+                        }}
+                    />
+                ))}
                 <TableCell sx={{fontSize:'.75rem'}}>
                     <Box sx={{display:'flex', alignItems:'center', height:'100%'}}>
                         {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
@@ -474,58 +564,32 @@ function CollapsibleRow({group, labels, handleMenuOpen}) {
                     {renderHead?.call(undefined,group.key)||group.key||'N/A'}
                 </TableCell>
                 {/* padding */}
-                <TableCell colSpan={labels?.length} />
+                <TableCell colSpan={labels?.length-value} />
             </TableRow>
             {/* Rows to be displayed */}
-            {open && group?.value?.map((bi) => {
-                let data = bi.data;
+            {group?.value?.map((group, i) => {
                 return (
-                    <TableRow
-                        hover
-                        key={bi.id}
-                        onClick={()=>null}
-                        sx={{ 
-                            animation: 'fadeInAnimation ease 1s',
-                            "@keyframes fadeInAnimation": {
-                                '0%': {
-                                    opacity: 0,
-                                },
-                                '100%': {
-                                    opacity: 1,
-                                },
-                            },
-                        }}
-                        >
-                        {/* arrow */}
-                        <TableCell sx={{fontSize:'.75rem'}}>
-                            <Box sx={{display:'flex', alignItems:'center', height:'100%'}}>
-                                <KeyboardArrowUpIcon sx={{visibility:'hidden'}} />
-                            </Box>
-                        </TableCell>
-                        {/* cells */}
-                        {labels.map((v, i) => {
-                            if (v.hideRender) return null;
-                            const renderFunc = (v?.renderer) ? v?.renderer : v?.converter;
-                            return <TableCell key={i} sx={{fontSize:'.75rem'}}>{renderFunc?.call(undefined,data[v.key])||data[v.key]}</TableCell>
-                        })}
-                        {/* menu */}
-                        <TableCell align="center">
-                            <IconButton 
-                                data-record-id={bi.id} 
-                                size='small'
-                                onClick={handleMenuOpen}
-                                >
-                                <MoreVertRoundedIcon fontSize='small' />
-                            </IconButton>
-                        </TableCell>
-                    </TableRow>
-                    );
+                    <CollapsibleRowRecursion key={i} priorOpen={open&&priorOpen} group={group} labels={labels} handleMenuOpen={handleMenuOpen} value={value+1} />
+                );
             })}
         </>
     );
 }
 
 
+
+
+
+
+function debounce(func, delay) {
+    let timeoutId;
+    return function(...args) {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+            func.apply(this, args);
+        }, delay);
+    };
+}
 
 // function descendingComparator(a, b, orderObj) {
 //     const dataA = a.data;
@@ -547,17 +611,91 @@ function CollapsibleRow({group, labels, handleMenuOpen}) {
 //         : (a, b) => descendingComparator(a, b, orderObj);
 // }
 
-
-function debounce(func, delay) {
-    let timeoutId;
-    return function(...args) {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-            func.apply(this, args);
-        }, delay);
-    };
-}
-
+// function CollapsibleRow({group, labels, handleMenuOpen}) {
+//     const [open, setOpen] = useState(true);
+//     const label = labels.filter(v => v.key===group.category)[0];
+//     const renderHead = (label?.renderer) ? label?.renderer : label?.converter;
+//     return (
+//         <>  
+//             {/* Group By row */}
+//             <TableRow
+//                 hover
+//                 onClick={()=>setOpen(p=>!p)}
+//                 selected={open}
+//                 sx={{ 
+//                     cursor: 'pointer',
+//                     bgcolor:'offGrey.light',
+//                     '&.Mui-selected': {
+//                         bgcolor:'offGrey.light',
+//                     },
+//                     '&.MuiTableRow-hover': {
+//                         '&:hover': {
+//                             bgcolor:'offGrey.dark',
+//                         }
+//                     }
+//                 }}
+//                 >
+//                 {/* Arrow */}
+//                 <TableCell sx={{fontSize:'.75rem'}}>
+//                     <Box sx={{display:'flex', alignItems:'center', height:'100%'}}>
+//                         {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+//                     </Box>
+//                 </TableCell>
+//                 {/* Group By Value */}
+//                 <TableCell sx={{fontSize:'.75rem'}}>
+//                     {renderHead?.call(undefined,group.key)||group.key||'N/A'}
+//                 </TableCell>
+//                 {/* padding */}
+//                 <TableCell colSpan={labels?.length} />
+//             </TableRow>
+//             {/* Rows to be displayed */}
+//             {open && group?.value?.map((bi) => {
+//                 let data = bi.data;
+//                 return (
+//                     <TableRow
+//                         hover
+//                         key={bi.id}
+//                         onClick={()=>null}
+//                         sx={{ 
+//                             animation: 'fadeInAnimation ease 1s',
+//                             "@keyframes fadeInAnimation": {
+//                                 '0%': {
+//                                     opacity: 0,
+//                                 },
+//                                 '100%': {
+//                                     opacity: 1,
+//                                 },
+//                             },
+//                         }}
+//                         >
+//                         {/* arrow */}
+//                         <TableCell sx={{fontSize:'.75rem'}}>
+//                             <Box sx={{display:'flex', alignItems:'center', height:'100%'}}>
+//                                 <KeyboardArrowUpIcon sx={{visibility:'hidden'}} />
+//                             </Box>
+//                         </TableCell>
+//                         {/* cells */}
+//                         {labels.map((v, i) => {
+//                             if (v.hideRender) return null;
+//                             const renderFunc = (v?.renderer) ? v?.renderer : v?.converter;
+//                             return <TableCell key={i} sx={{fontSize:'.75rem'}}>{renderFunc?.call(undefined,data[v.key])||data[v.key]}</TableCell>
+//                         })}
+//                         {/* menu */}
+//                         <TableCell align="center">
+//                             <IconButton 
+//                                 data-record-id={bi.id} 
+//                                 size='small'
+//                                 onClick={handleMenuOpen}
+//                                 >
+//                                 <MoreVertRoundedIcon fontSize='small' />
+//                             </IconButton>
+//                         </TableCell>
+//                     </TableRow>
+//                     );
+//             })}
+//         </>
+//     );
+// }
 
 
 
