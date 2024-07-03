@@ -20,7 +20,7 @@ export default function Home() {
                     id: data.id, 
                     data: {
                         ...data.data,
-                        Start_Date: currDate.toISOString(),
+                        Start_Date: currDate.toISOString().slice(0,-1), // to remove the Z which is univeral time
                     },
                 });
 
@@ -42,7 +42,7 @@ export default function Home() {
                 name:'Date', key:'Start_Date',
                 converter: (v) => {
                     if (v) {
-                        const date = new Date(v.slice(0,-1));
+                        const date = new Date(v);
                         return (date.getMonth()+1) + '/' + date.getDate() + '/' + date.getFullYear();
                     }
                 },

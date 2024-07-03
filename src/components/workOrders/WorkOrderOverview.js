@@ -33,7 +33,7 @@ export default function WorkOrderOverview() {
                 name:'Start Date', key:'Start_Date',
                 converter: (v) => {
                     if (v) {
-                        const date = new Date(v.slice(0,-1));
+                        const date = new Date(v);
                         return (date.getMonth()+1) + '/' + date.getDate() + '/' + date.getFullYear();
                     }
                 },

@@ -12,7 +12,7 @@ export default function CustomerOverviewPropertyManagers() {
                 name:'Created', key:'Created_Date',
                 converter: (v) => {
                     if (v) {
-                        const date = new Date(v.slice(0,-1));
+                        const date = new Date(v);
                         return (date.getMonth()+1) + '/' + date.getDate() + '/' + date.getFullYear();
                     }
                 },
