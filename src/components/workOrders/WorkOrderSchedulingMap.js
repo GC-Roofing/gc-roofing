@@ -83,6 +83,7 @@ function APIMap() {
             console.log(geocodes)
             if (geocodes.length !== 0) {
                 geocodes.forEach(marker => {
+                    if (!marker) return console.log('marker is null');
                     bounds.extend(marker);
                 });
 
