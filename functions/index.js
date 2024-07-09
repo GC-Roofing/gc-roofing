@@ -22,14 +22,15 @@ initializeApp();
 // https://firebase.google.com/docs/functions/get-started
 
 exports.deletereferences = onDocumentDeleted("/property/{docId}", async (event) => {
+    console.log('cool');
     // get data
     const dataRef = event.data.ref;
     // get database
     const db = getFirestore()
     // get assessment collection
-    const assessments = db.collection('entity');
+    const entity = db.collection('entity');
     // querysnapshot
-    const querySnapshot = await assessments.where('entityProperties', 'array-contains', dataRef).get();
+    const querySnapshot = await entity.where('entityProperties', 'array-contains', dataRef).get();
 
     // get new reference list
     const batch = db.batch();
