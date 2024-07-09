@@ -8,6 +8,8 @@
  */
 
 const {onCall, HttpsError} = require("firebase-functions/v2/https");
+const {onDocumentDeleted} = require("firebase-functions/v2/firestore");
+
 // const logger = require("firebase-functions/logger");
 
 const {initializeApp} = require("firebase-admin/app");
