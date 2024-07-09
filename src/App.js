@@ -2,6 +2,7 @@ import './App.css';
 import { createBrowserRouter, RouterProvider, Navigate, Outlet } from "react-router-dom";
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import {APIProvider} from '@vis.gl/react-google-maps';
 
 
 import AuthContext from './AuthContext';
@@ -35,7 +36,10 @@ import OrderHistoryNewOrder from './components/inventory/OrderHistoryNewOrder';
 import OverviewSidebar from './components/pvm/OverviewSidebar';
 import TransferCaspioData from './components/dataTable/TransferCaspioData';
 import BatchUpdates from './components/dataTable/BatchUpdates';
-
+import FormSidebar from './components/forms/FormSidebar';
+import BuildingForm from './components/forms/BuildingForm';
+import PropertyForm from './components/forms/PropertyForm';
+import EntityForm from './components/forms/EntityForm';
 
 
 
@@ -302,15 +306,41 @@ function App() {
                                 
                             ]
                         },
-                        // {
-                        //     path:'tutorials',
-                        //     element:'tutorials',
-                        //     loader: () => document.title = 'Tutorials',
-                        // },
                         {
                             path:'admin',
                             element:'admin',
                             loader: () => document.title = 'Admin',
+                        },
+                        {
+                            path:'forms',
+                            element: <FormSidebar />,
+                            loader: () => document.title = 'Forms',
+                            children:[
+                                {
+                                    index:true,
+                                    element:<Navigate replace to='select-form' />
+                                },
+                                {
+                                    path:'select-form',
+                                    element:<div />
+                                },
+                                {
+                                    path:'property',
+                                    element:<PropertyForm />
+                                },
+                                {
+                                    path:'building',
+                                    element:<BuildingForm />
+                                },
+                                {
+                                    path:'entity',
+                                    element:<EntityForm />
+                                },
+                                {
+                                    path:'management',
+                                    element:'management'
+                                },
+                            ]
                         },
                         {
                             path:'transfer314',
@@ -361,7 +391,9 @@ function App() {
         <>
             <CssBaseline />
             <ThemeProvider theme={theme}>
-                <RouterProvider router={router} />
+                <APIProvider apiKey={'AIzaSyD_uVKlMkmGj4HIbA3cg6f4uKcv3R9pCos'}>
+                    <RouterProvider router={router} />
+                </APIProvider>
             </ThemeProvider>
         </>
     );

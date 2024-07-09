@@ -19,6 +19,28 @@ initializeApp();
 // Create and deploy your first functions
 // https://firebase.google.com/docs/functions/get-started
 
+exports.deletereferences = onDocumentDeleted("/property/{docId}", async (event) => {
+    // get data
+    const dataRef = event.data.ref;
+    // get database
+    const db = getFirestore()
+    // get assessment collection
+    const assessments = db.collection('entity');
+    // querysnapshot
+    const querySnapshot = await assessments.where('entityProperties', 'array-contains', dataRef).get();
+
+    // get new reference list
+    const batch = db.batch();
+    querySnapshot.forEach((doc) => {
+        const updatedReferenceList = doc.data().entityProperties.filter(ref => ref.id !== dataRef.id);
+        batch.update(doc.ref, {entityProperties: updatedReferenceList});
+    });
+
+    await batch.commit();
+
+    return { success:true };
+});
+
 exports.filterData = onCall({ cors: ['https://gc-roofing.web.app', "http://localhost:3000"] }, async (req) => {
     // console.log('/////////////////////////////')
     // init
@@ -192,12 +214,12 @@ function innerJoin(leftData, rightData, joinOn) {
 }
 
 function leftJoin(leftData, rightData, joinOn) {
-    let leftDataJoin = new Set(rightData.map(d => d.data[joinOn]));
+    let leftDataJoin = new Set(leftData.map(d => d.data[joinOn]));
     rightData = rightData.filter(d => leftDataJoin.has(d.data[joinOn])).sort(getComparator(['asc'], [joinOn]));
     return leftData.map((d, i) => {
         let omitNull = obj => {
             if (!obj) return {};
-            Object.keys(obj).filter(k => obj[k] === '').forEach(k => delete(obj[k]))
+            Object.keys(obj).filter(k => !obj[k]).forEach(k => delete(obj[k]))
             return obj
         }
 

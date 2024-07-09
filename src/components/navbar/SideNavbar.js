@@ -9,7 +9,7 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 
 
-export default function SideNavbar({tabs, initial=0}) {
+export default function SideNavbar({header, tabs, initial=0}) {
     const [value, setValue] = useState(initial);
 
 
@@ -27,6 +27,7 @@ export default function SideNavbar({tabs, initial=0}) {
     return (
         <Box sx={{py:{xs:'5%', md:'20%'}, px:'10%', height:'100%', width:'100%'}}>
             <Paper sx={{bgcolor:'offGrey.main', py:'5%'}}>
+                {header}
                 <Tabs 
                     value={value} 
                     onChange={handleChange} 

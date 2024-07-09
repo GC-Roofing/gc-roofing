@@ -187,6 +187,18 @@ const navTabs = [
         key:'admin',
         to:'admin',
     },
+    {
+        name:'Forms',
+        key:'forms',
+        to:'forms',
+        menu: [
+            {
+                name:'Select Form',
+                key:'select-form',
+                to:'select-form'
+            },
+        ]
+    },
 ]
 
 
