@@ -85,16 +85,26 @@ exports.deletePropertyReferences = onDocumentDeleted("/property/{docId}", async 
 exports.deleteBuildingReferences = onDocumentDeleted("/building/{docId}", async (event) => {
     // get data
     const dataRef = event.data.ref;
+    const data = event.data.data();
     // get database
     const db = getFirestore()
     // get assessment collection
+    const transaction = db.collection('transaction');
     const property = db.collection('property');
     // querysnapshot
-    const querySnapshot = await property.where('buildings', 'array-contains', dataRef).get();
+    let transactionSnapshot = transaction.where('buildings', 'array-contains', dataRef).get();
+    let propertySnapshot = property.where('buildings', 'array-contains', dataRef).get();
 
+    [transactionSnapshot, propertySnapshot] = await Promise.all([transactionSnapshot, propertySnapshot]);
     // get new reference list
     const batch = db.batch();
-    querySnapshot.forEach((doc) => {
+
+    transactionSnapshot.forEach((doc) => {
+        const updatedReferenceList = doc.data().buildings.filter(ref => ref.id !== dataRef.id);
+        batch.update(doc.ref, {buildings: updatedReferenceList});
+    });
+
+    propertySnapshot.forEach((doc) => {
         const updatedReferenceList = doc.data().buildings.filter(ref => ref.id !== dataRef.id);
         batch.update(doc.ref, {buildings: updatedReferenceList});
     });

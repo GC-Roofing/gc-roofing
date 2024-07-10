@@ -87,7 +87,7 @@ export default function PropertyForm({id, action}) {
     // if form submitted
     async function handleSubmit() {
         // check if all required fields are filled out
-        if (required.some(v => text[v] === '')) {
+        if (required.some(v => text[v] === '' || text[v] === null)) {
             setValidation(v=>true);
             setMessage('Fill out required fields');
             return;
@@ -125,23 +125,26 @@ export default function PropertyForm({id, action}) {
         try {
             await runTransaction(firestore, async (transaction) => {
                 // get reference doc
-                const entityDoc = await transaction.get(entityRef);
+                const objRefKeys = Object.keys(objRef).filter(v => objRef[v] !== null);
+                const objDocList = await Promise.all(objRefKeys.map(key => transaction.get(objRef[key])));
+
+                // update the reference doc
+                objRefKeys.forEach((key) => {
+                    transaction.update(objRef[key], {
+                        [collectionName+'s']: objDocList[objRefKeys.indexOf(key)].data()[collectionName+'s'].concat(docRef)
+                    });
+                });
 
                 // set the current form
                 transaction.set(docRef, {
                     createdAt: serverTimestamp(),
                     ...relationshipsObj,
                     ...text,
-                    entity: entityRef,
+                    ...Object.fromEntries(Object.entries(objRef).filter(([_, v]) => v !== null)),
                     fullAddress: fullAddress,
                     coordinates: coordinates,
                     lastEdited: serverTimestamp(),
                 }, {merge:true});
-
-                // update the reference doc
-                transaction.update(entityRef, {
-                    propertys: entityDoc.data().propertys.concat(docRef),
-                });
             });
 
             // await setDoc(docRef, {
@@ -181,8 +184,8 @@ export default function PropertyForm({id, action}) {
         setValidation(false);
         setText(Object.assign(...fields.map(k => ({ [k]: '' }))));
         setFormId(null);
-        // custom
-        setEntityRef({});
+        setObjRef(Object.assign(...fields.map(k => ({ [k]: null }))));
+        setObjList(Object.assign(...fields.map(k => ({ [k]: [] }))));
     }
 
     // geocode
@@ -214,21 +217,38 @@ export default function PropertyForm({id, action}) {
 
     // autocomplete stuff
 
+    // init
+    // const autoCompleteFields = ['Client', 'Management', 'Property'];
+
+
     // state
-    const [entityRef, setEntityRef] = useState();
-    const [entityList, setEntityList] = useState([]);
-    const [tempText, setTempText] = useState('');
+    const [objRef, setObjRef] = useState(Object.assign(...fields.map(k => ({ [k]: null }))));
+    const [objList, setObjList] = useState(Object.assign(...fields.map(k => ({ [k]: [] }))));
     const [autoLoading, setAutoLoading] = useState(false);
+    const [current, setCurrent] = useState(null);
 
     // get info
-    const getInfo = useCallback(async (text) => {
+    const getInfo = useCallback(async (textObj, current) => {
+        ////////////////////////////////// This should be a param if it is ever generalized
+        const splitValue = 'client';
+        const splitValueValues = ['entity', 'tenant'];
+
+
+        const text = textObj[current]?.label;
         if (!text) return;
+
+        // if a column can have multiple values
+        let multiple;
+        if (current === splitValue) {
+            multiple = splitValueValues;
+        }
+
         try {
             // get callable function and data
             setAutoLoading(true);
             const filterData = httpsCallable(functions, 'filterData');
             const result = await filterData({
-                collections:['entity'], 
+                collections:multiple || [current], 
                 pageNum:1, 
                 pageSize:25, 
                 orderBy:'name', 
@@ -237,46 +257,76 @@ export default function PropertyForm({id, action}) {
                 labels:[{key:'name'}],
             });
             const data = result.data; // result.data is because it is the data of the results
-            setEntityList(data.data); // data.data is because i have an object {data: obj, length: num}
+
+            setObjList(t => ({
+                ...t,
+                [current]: data.data,
+            })); // data.data is because i have an object {data: obj, length: num}
         } catch(e) {
             console.log(e.message);
         }
 
         setAutoLoading(false);
     }, []);
-    
+
     // delay when to actually run the function
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const debouncedInfo = useCallback(debounce(getInfo, 500), [getInfo])
 
     // update
     useEffect(() => {
-        debouncedInfo(tempText);
-    }, [debouncedInfo, tempText]);
+        debouncedInfo(text, current);
+    }, [debouncedInfo, text, current]);
+
 
     // when selected
     function handleSelect(name) {
         return (event, value, reason) => {
             if (reason === 'selectOption') {
-                const v = doc(firestore, 'entity', value.value);
-                setEntityRef(v);
+                const v = doc(firestore, value.key.split('-')[0], value.key);
+                setObjRef(t => ({
+                    ...t,
+                    [current]: v
+                }));
+                setText(t => ({
+                    ...t,
+                    [current]: {...value} 
+                }));
             } else {
-                setEntityRef({});
+                setObjRef(t => ({
+                    ...t,
+                    [current]: null
+                }));
+            }
+
+            if (message) {
+                setMessage('');
             }
         }
+    }
+
+    // when opened
+    function handleOpen(name) {
+        return () => setCurrent(name);
     }
 
     // when input changes
     function handleInputChange(name) {
         return (event, value, reason) => {
-            // for validation
             setText(t => ({
                 ...t,
-                [name]: value,
+                [name]: {
+                    label:value,
+                    key: null,
+                },
             }));
 
-            // for setting the actual value
-            setTempText(t=>value);
+            if (value==='') {
+                setText(t => ({
+                    ...t,
+                    [name]: null,
+                }));
+            }
 
             // reset message
             // if (message) {
@@ -284,7 +334,7 @@ export default function PropertyForm({id, action}) {
             // }
         }
     }
-    
+
     // for debounce
     function debounce(func, delay) {
         let timeoutId;
@@ -333,21 +383,21 @@ export default function PropertyForm({id, action}) {
                             const currIndex = ++fieldIndex;
                             return (
                                 <Autocomplete
-                                    openOnFocus
                                     disablePortal
-                                    freeSolo
                                     autoHighlight
+                                    getOptionKey={v => v.key}
                                     loading={autoLoading}
-                                    options={entityList.map(v => ({
+                                    options={objList[fields[currIndex]].map(v => ({
                                         label: v.data.name,
-                                        value: v.id,
+                                        key: v.id,
                                     }))}
                                     sx={{ width: totalWidth(1/2), m:margin }}
                                     size='small'
+                                    onOpen={handleOpen(fields[currIndex])}
                                     onChange={handleSelect(fields[currIndex])}
                                     onInputChange={handleInputChange(fields[currIndex])}
-                                    value={text[fields[currIndex]]}
-                                    isOptionEqualToValue={(option, value) => option.label === value}
+                                    value={(text[fields[currIndex]]?.key) ? text[fields[currIndex]] : null}
+                                    isOptionEqualToValue={(option, value) => option.key === value.key}
                                     renderInput={(params) => (
                                         <TextField 
                                             {...params}
@@ -361,8 +411,8 @@ export default function PropertyForm({id, action}) {
                             }
                         )()}
                         <Box>
-                            <Typography sx={{ fontWeight:'bold' }}>Entity ID:</Typography>
-                            <Typography>{entityRef?.id}</Typography>
+                            <Typography sx={{ fontWeight:'bold' }}>{fieldNames[fieldIndex]} ID:</Typography>
+                            <Typography>{objRef[fields[fieldIndex]]?.id}</Typography>
                         </Box>
                     </Box>
                     {/* address and full address */}

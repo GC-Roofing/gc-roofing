@@ -21,15 +21,15 @@ export default function TransactionForm({id, action}) {
     // initialize
     const collectionName = 'transaction';
     const title = 'Transaction';
-    const fields = ['client', 'management', 'property']; // fields
-    // const types = [String, String, String]; // types
+    const fields = ['name', 'client', 'management', 'property']; // fields
+    const types = [String, String, String, String]; // types
     // const addressList = fields.slice(3, 7);
-    const fieldNames = ['Client', 'Management', 'Property'];
-    const relationships = ['WorkOrders', 'Buildings'];
+    const fieldNames = ['Transaction Name', 'Client', 'Management', 'Property'];
+    const relationships = ['workOrders', 'buildings'];
     const required = [...fields.filter(v => !['management'].includes(v))]; // required fields
 
     let fieldIndex = -1;
-    // const typeFuncs = Object.assign(...fields.map((k, i) => ({ [k]: types[i] }))); // type functions
+    const typeFuncs = Object.assign(...fields.map((k, i) => ({ [k]: types[i] }))); // type functions
 
     // state
     const [text, setText] = useState(Object.assign(...fields.map(k => ({ [k]: '' })))); // text field stuff
@@ -68,24 +68,24 @@ export default function TransactionForm({id, action}) {
 
     // handlers
     // handles text change
-    // function handleChange({target}) {
-    //     const value = typeFuncs[target.name](target.value);
+    function handleChange({target}) {
+        const value = typeFuncs[target.name](target.value);
 
-    //     setText(t => ({
-    //         ...t,
-    //         [target.name]: value,
-    //     }));
+        setText(t => ({
+            ...t,
+            [target.name]: value,
+        }));
 
-    //     // reset message
-    //     if (message) {
-    //         setMessage('');
-    //     }
-    // }
+        // reset message
+        if (message) {
+            setMessage('');
+        }
+    }
 
     // if form submitted
     async function handleSubmit() {
         // check if all required fields are filled out
-        if (required.some(v => text[v] === '' || text[v].label === '')) {
+        if (required.some(v => text[v] === '' || text[v] === null)) { // autocomplete needed
             setValidation(v=>true);
             setMessage('Fill out required fields');
             return;
@@ -123,7 +123,7 @@ export default function TransactionForm({id, action}) {
         try {
             await runTransaction(firestore, async (transaction) => {
                 // get reference doc
-                const objRefKeys = Object.keys(objRef);
+                const objRefKeys = Object.keys(objRef).filter(v => objRef[v] !== null);
                 const objDocList = await Promise.all(objRefKeys.map(key => transaction.get(objRef[key])));
 
                 // update the reference doc
@@ -138,7 +138,7 @@ export default function TransactionForm({id, action}) {
                     createdAt: serverTimestamp(),
                     ...relationshipsObj,
                     ...text,
-                    ...objRef,
+                    ...Object.fromEntries(Object.entries(objRef).filter(([_, v]) => v !== null)),
                     // [collectionName + 'FullAddress']: fullAddress,
                     // [collectionName + 'Coordinates']: coordinates,
                     lastEdited: serverTimestamp(),
@@ -182,6 +182,8 @@ export default function TransactionForm({id, action}) {
         setValidation(false);
         setText(Object.assign(...fields.map(k => ({ [k]: '' }))));
         setFormId(null);
+        setObjRef(Object.assign(...fields.map(k => ({ [k]: null }))));
+        setObjList(Object.assign(...fields.map(k => ({ [k]: [] }))));
     }
 
     // // geocode
@@ -218,7 +220,7 @@ export default function TransactionForm({id, action}) {
     
 
     // state
-    const [objRef, setObjRef] = useState(Object.assign(...fields.map(k => ({ [k]: {} }))));
+    const [objRef, setObjRef] = useState(Object.assign(...fields.map(k => ({ [k]: null }))));
     const [objList, setObjList] = useState(Object.assign(...fields.map(k => ({ [k]: [] }))));
     const [autoLoading, setAutoLoading] = useState(false);
     const [current, setCurrent] = useState(null);
@@ -290,7 +292,7 @@ export default function TransactionForm({id, action}) {
             } else {
                 setObjRef(t => ({
                     ...t,
-                    [current]: {}
+                    [current]:null
                 }));
             }
 
@@ -312,9 +314,16 @@ export default function TransactionForm({id, action}) {
                 ...t,
                 [name]: {
                     label:value,
-                    key: text[name].key,
+                    key: null,
                 },
             }));
+
+            if (value==='') {
+                setText(t => ({
+                    ...t,
+                    [name]: null,
+                }));
+            }
 
             // reset message
             // if (message) {
@@ -348,7 +357,17 @@ export default function TransactionForm({id, action}) {
                 <Box sx={{p:'1%', width:totalWidth(1)}}>
                     {/* name and id */}
                     <Box sx={{display:'flex', alignItems:'center'}}>
-                        <Box sx={{ width: totalWidth(1/2), m:margin }}>
+                        <TextField 
+                            size='small'
+                            label={fieldNames[++fieldIndex]}
+                            name={fields[fieldIndex]}
+                            sx={{ width: totalWidth(1/2), m:margin }}
+                            required
+                            value={text[fields[fieldIndex]]}
+                            onChange={handleChange}
+                            error={validation&&!text[fields[fieldIndex]]}
+                            />
+                        <Box>
                             <Typography sx={{ fontWeight:'bold' }}>{title} ID:</Typography>
                             <Typography>{formId}</Typography>
                         </Box>
@@ -362,7 +381,6 @@ export default function TransactionForm({id, action}) {
                                 <Autocomplete
                                     disablePortal
                                     autoHighlight
-                                    freeSolo
                                     getOptionKey={v => v.key}
                                     loading={autoLoading}
                                     options={objList[fields[currIndex]].map(v => ({
@@ -374,14 +392,14 @@ export default function TransactionForm({id, action}) {
                                     onOpen={handleOpen(fields[currIndex])}
                                     onChange={handleSelect(fields[currIndex])}
                                     onInputChange={handleInputChange(fields[currIndex])}
-                                    value={text[fields[currIndex]]}
+                                    value={(text[fields[currIndex]]?.key) ? text[fields[currIndex]] : null}
                                     isOptionEqualToValue={(option, value) => option.key === value.key}
                                     renderInput={(params) => (
                                         <TextField 
                                             {...params}
                                             label={fieldNames[currIndex]} 
                                             name={fields[currIndex]}
-                                            error={validation&&!text[fields[currIndex]].label}
+                                            error={validation&&!text[fields[currIndex]]}
                                             />
                                     )}
                                     />
@@ -402,7 +420,6 @@ export default function TransactionForm({id, action}) {
                                 <Autocomplete
                                     disablePortal
                                     autoHighlight
-                                    freeSolo
                                     getOptionKey={v => v.key}
                                     loading={autoLoading}
                                     options={objList[fields[currIndex]].map(v => ({
@@ -414,7 +431,7 @@ export default function TransactionForm({id, action}) {
                                     onOpen={handleOpen(fields[currIndex])}
                                     onChange={handleSelect(fields[currIndex])}
                                     onInputChange={handleInputChange(fields[currIndex])}
-                                    value={text[fields[currIndex]]}
+                                    value={(text[fields[currIndex]]?.key) ? text[fields[currIndex]] : null}
                                     isOptionEqualToValue={(option, value) => option.key === value.key}
                                     renderInput={(params) => (
                                         <TextField 
@@ -441,7 +458,6 @@ export default function TransactionForm({id, action}) {
                                 <Autocomplete
                                     disablePortal
                                     autoHighlight
-                                    freeSolo
                                     getOptionKey={v => v.key}
                                     loading={autoLoading}
                                     options={objList[fields[currIndex]].map(v => ({
@@ -453,14 +469,14 @@ export default function TransactionForm({id, action}) {
                                     onOpen={handleOpen(fields[currIndex])}
                                     onChange={handleSelect(fields[currIndex])}
                                     onInputChange={handleInputChange(fields[currIndex])}
-                                    value={text[fields[currIndex]]}
+                                    value={(text[fields[currIndex]]?.key) ? text[fields[currIndex]] : null}
                                     isOptionEqualToValue={(option, value) => option.key === value.key}
                                     renderInput={(params) => (
                                         <TextField 
                                             {...params}
                                             label={fieldNames[currIndex]} 
                                             name={fields[currIndex]}
-                                            error={validation&&!text[fields[currIndex]].label}
+                                            error={validation&&!text[fields[currIndex]]}
                                             />
                                     )}
                                     />
