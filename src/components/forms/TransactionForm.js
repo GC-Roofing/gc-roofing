@@ -1,5 +1,5 @@
 import {useState, useEffect, useCallback} from 'react';
-import { doc, collection, runTransaction, serverTimestamp, getDoc } from "firebase/firestore";
+import { doc, collection, runTransaction, serverTimestamp, getDoc, deleteDoc } from "firebase/firestore";
 // import {useMapsLibrary} from '@vis.gl/react-google-maps';
 import { httpsCallable } from "firebase/functions";
 
@@ -346,6 +346,13 @@ export default function TransactionForm({id, action}) {
                 </Box>
                 {/* Form */}
                 <Box sx={{p:'1%', width:totalWidth(1)}}>
+                    {/* name and id */}
+                    <Box sx={{display:'flex', alignItems:'center'}}>
+                        <Box sx={{ width: totalWidth(1/2), m:margin }}>
+                            <Typography sx={{ fontWeight:'bold' }}>{title} ID:</Typography>
+                            <Typography>{formId}</Typography>
+                        </Box>
+                    </Box>
                     {/* Client and id */}
                     <Box sx={{display:'flex', alignItems:'center'}}>
                         {/* this is a function so that field index is saved as a consistent reference for textfield */}
