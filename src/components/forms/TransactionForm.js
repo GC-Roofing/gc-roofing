@@ -1,5 +1,5 @@
 import {useState, useEffect, useCallback} from 'react';
-import { doc, collection, runTransaction, serverTimestamp, getDoc, deleteDoc } from "firebase/firestore";
+import { doc, collection, runTransaction, serverTimestamp, getDoc } from "firebase/firestore";
 // import {useMapsLibrary} from '@vis.gl/react-google-maps';
 import { httpsCallable } from "firebase/functions";
 

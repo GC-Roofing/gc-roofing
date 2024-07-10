@@ -85,7 +85,7 @@ export default function BuildingForm({id, action}) {
     // if form submitted
     async function handleSubmit() {
         // check if all required fields are filled out
-        if (required.some(v => text[v] === '')) {
+        if (required.some(v => text[v] === '' || text[v].label === '')) {
             setValidation(v=>true);
             setMessage('Fill out required fields');
             return;

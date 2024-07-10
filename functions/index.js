@@ -40,7 +40,6 @@ exports.deleteTransactionReferences = onDocumentDeleted("/transaction/{docId}", 
     // get new reference list
     const batch = db.batch();
 
-    console.log(clientSnapshot);
     clientSnapshot.forEach((doc) => {
         const updatedReferenceList = doc.data().transactions.filter(ref => ref.id !== dataRef.id);
         batch.update(doc.ref, {transactions: updatedReferenceList});
