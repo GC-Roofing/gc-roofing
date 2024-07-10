@@ -14,7 +14,7 @@ import Button from '@mui/material/Button';
 
 
 
-
+// if copy and no autocomplete, then remove transaction and uncomment setdoc. remove custom before return. remove autocomplete from return
 
 
 export default function BuildingForm({id, action}) {
@@ -40,7 +40,7 @@ export default function BuildingForm({id, action}) {
     const [formId, setFormId] = useState(id);
 
     // updates
-    // building id is either pregiven or auto generated
+    // if no id provided, then generate id
     useEffect(() => {
         if (!formId) {
             const collectionRef = collection(firestore, collectionName);
@@ -122,10 +122,10 @@ export default function BuildingForm({id, action}) {
         // try setting doc
         try {
             await runTransaction(firestore, async (transaction) => {
+                // get reference doc
                 const propertyDoc = await transaction.get(propertyRef);
-                console.log(propertyDoc.exists())
 
-
+                // set the current form
                 transaction.set(docRef, {
                     [collectionName + 'CreatedAt']: serverTimestamp(),
                     ...relationshipsObj,
@@ -136,6 +136,7 @@ export default function BuildingForm({id, action}) {
                     [collectionName + 'LastEdited']: serverTimestamp(),
                 }, {merge:true});
 
+                // update the reference doc
                 transaction.update(propertyRef, {
                     propertyBuildings: propertyDoc.data().propertyBuildings.concat(docRef),
                 });
@@ -226,7 +227,7 @@ export default function BuildingForm({id, action}) {
                 pageSize:25, 
                 orderBy:'propertyName', 
                 orderDirection:'asc', 
-                filter:{['propertyName']:text}, 
+                filter:{propertyName:text}, 
                 labels:[{key:'propertyName'}],
             });
             const data = result.data; // result.data is because it is the data of the results
@@ -288,8 +289,9 @@ export default function BuildingForm({id, action}) {
             }, delay);
         };
     }
+    //////////////////
     // end custom
-
+    //////////////////
 
     return (
         <Box sx={{height:'100%', overflow:'scroll'}}>

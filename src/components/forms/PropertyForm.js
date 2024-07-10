@@ -14,6 +14,7 @@ import Button from '@mui/material/Button';
 
 
 
+// if copy and no autocomplete, then remove transaction and uncomment setdoc. remove custom before return. remove autocomplete from return
 
 
 
@@ -41,7 +42,7 @@ export default function PropertyForm({id, action}) {
     const [formId, setFormId] = useState(id);
 
     // updates
-    // building id is either pregiven or auto generated
+    // if no id provided, then generate id
     useEffect(() => {
         if (!formId) {
             const collectionRef = collection(firestore, collectionName);
@@ -123,8 +124,10 @@ export default function PropertyForm({id, action}) {
         // try setting doc
         try {
             await runTransaction(firestore, async (transaction) => {
+                // get reference doc
                 const entityDoc = await transaction.get(entityRef);
 
+                // set the current form
                 transaction.set(docRef, {
                     [collectionName + 'CreatedAt']: serverTimestamp(),
                     ...relationshipsObj,
@@ -135,6 +138,7 @@ export default function PropertyForm({id, action}) {
                     [collectionName + 'LastEdited']: serverTimestamp(),
                 }, {merge:true});
 
+                // update the reference doc
                 transaction.update(entityRef, {
                     entityProperties: entityDoc.data().entityProperties.concat(docRef),
                 });
@@ -291,7 +295,9 @@ export default function PropertyForm({id, action}) {
             }, delay);
         };
     }
+    //////////////////
     // end custom
+    //////////////////
 
 
     return (
