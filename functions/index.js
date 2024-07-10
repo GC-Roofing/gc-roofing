@@ -111,7 +111,7 @@ exports.filterData = onCall({ cors: ['https://gc-roofing.web.app', "http://local
         // Start joining
         // console.log('derek ------> start joining');
         let data;
-        if (relations) {
+        if (relations.length > 0) {
             data = collections[relations.at(0)?.collections.shift()];
             for (let relation of relations) {
                 let leftData = data;
@@ -130,10 +130,10 @@ exports.filterData = onCall({ cors: ['https://gc-roofing.web.app', "http://local
         } else {
             data = [];
             for (let cn of collectionNames) {
-                data.concat(collections[cn]);
+                data.push(...collections[cn]);
             }
-        }
 
+        }
         // console.log('derek ------> finished joining')
 
         // datafunc manipulate results

@@ -23,11 +23,11 @@ export default function PropertyForm({id, action}) {
     // initialize
     const collectionName = 'property';
     const title = 'Property';
-    const fields = ['Name', 'Entity', 'Address', 'City', 'State', 'Zip'].map(v=>collectionName+v); // fields
+    const fields = ['name', 'entity', 'address', 'city', 'state', 'zip']; // fields
     const types = [String, String, String, String, String, String]; // types
     const addressList = fields.slice(2, 6);
     const fieldNames = ['Property Name', 'Entity', 'Address', 'City', 'State', 'Zip Code'];
-    const relationships = ['Transactions', 'Buildings'];
+    const relationships = ['transactions', 'buildings'];
     const required = [...fields]; // required fields
 
     let fieldIndex = -1;
@@ -100,8 +100,8 @@ export default function PropertyForm({id, action}) {
         const docRef = doc(firestore, collectionName, formId); 
         // get full address and geocode
         const fullAddress = `${text[addressList[0]]}, ${text[addressList[1]]}, ${text[addressList[2]]} ${text[addressList[3]]}`;
-        let coordinates = text[collectionName + 'Coordinates'] && {...text[collectionName + 'Coordinates']};
-        if (fullAddress !== text[collectionName + 'FullAddress']) {
+        let coordinates = text['coordinates'] && {...text['coordinates']};
+        if (fullAddress !== text['fullAddress']) {
             const geoFuncs = await geocode(fullAddress);
             if (!geoFuncs) {
                 setValidation(v=>true);
@@ -118,7 +118,7 @@ export default function PropertyForm({id, action}) {
         // build list for relationships
         let relationshipsObj = {};
         if (relationships.length > 0) {
-            relationshipsObj = Object.assign(...relationships.map(k => ({ [collectionName+k]: [] })));
+            relationshipsObj = Object.assign(...relationships.map(k => ({ [k]: [] })));
         }
 
         // try setting doc
@@ -129,29 +129,29 @@ export default function PropertyForm({id, action}) {
 
                 // set the current form
                 transaction.set(docRef, {
-                    [collectionName + 'CreatedAt']: serverTimestamp(),
+                    ['createdAt']: serverTimestamp(),
                     ...relationshipsObj,
                     ...text,
-                    [collectionName + 'Entity']: entityRef,
-                    [collectionName + 'FullAddress']: fullAddress,
-                    [collectionName + 'Coordinates']: coordinates,
-                    [collectionName + 'LastEdited']: serverTimestamp(),
+                    ['entity']: entityRef,
+                    ['fullAddress']: fullAddress,
+                    ['coordinates']: coordinates,
+                    ['lastEdited']: serverTimestamp(),
                 }, {merge:true});
 
                 // update the reference doc
                 transaction.update(entityRef, {
-                    entityProperties: entityDoc.data().entityProperties.concat(docRef),
+                    properties: entityDoc.data().properties.concat(docRef),
                 });
             });
 
             // await setDoc(docRef, {
-            //     [collectionName + 'CreatedAt']: serverTimestamp(),
+            //     ['CreatedAt']: serverTimestamp(),
             //     ...relationshipsObj,
             //     ...text,
             //     ...entityRef,
-            //     [collectionName + 'FullAddress']: fullAddress,
-            //     [collectionName + 'Coordinates']: coordinates,
-            //     [collectionName + 'LastEdited']: serverTimestamp(),
+            //     ['FullAddress']: fullAddress,
+            //     ['Coordinates']: coordinates,
+            //     ['LastEdited']: serverTimestamp(),
             // }, {merge:true}); // merge allows for updating and setting
 
             setMessage('Saved!'); // success message
@@ -231,10 +231,10 @@ export default function PropertyForm({id, action}) {
                 collections:['entity'], 
                 pageNum:1, 
                 pageSize:25, 
-                orderBy:'entityName', 
+                orderBy:'name', 
                 orderDirection:'asc', 
-                filter:{entityName:text}, 
-                labels:[{key:'entityName'}],
+                filter:{name:text}, 
+                labels:[{key:'name'}],
             });
             const data = result.data; // result.data is because it is the data of the results
             setEntityList(data.data); // data.data is because i have an object {data: obj, length: num}
@@ -338,7 +338,7 @@ export default function PropertyForm({id, action}) {
                                     autoHighlight
                                     loading={autoLoading}
                                     options={entityList.map(v => ({
-                                        label: v.data.entityName,
+                                        label: v.data.name,
                                         value: v.id,
                                     }))}
                                     sx={{ width: totalWidth(1/2), m:margin }}

@@ -21,11 +21,11 @@ export default function ManagementForm({id, action}) {
     // initialize
     const collectionName = 'management';
     const title = 'Management';
-    const fields = ['Name', 'BillingName', 'BillingEmail', 'ContactName', 'ContactEmail', 'Address', 'City', 'State', 'Zip'].map(v=>collectionName+v); // fields
+    const fields = ['name', 'billingName', 'billingEmail', 'contactName', 'contactEmail', 'address', 'city', 'state', 'zip']; // fields
     const types = [String, String, String, String, String, String, String, String, String]; // types
     const addressList = fields.slice(4, 8);
     const fieldNames = ['Management Name', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Address', 'City', 'State', 'Zip Code'];
-    const relationships = ['Transactions'];
+    const relationships = ['transactions'];
     const required = [...fields]; // required fields
 
     let fieldIndex = -1;
@@ -99,8 +99,8 @@ export default function ManagementForm({id, action}) {
         const docRef = doc(firestore, collectionName, formId); 
         // get full address and geocode
         const fullAddress = `${text[addressList[0]]}, ${text[addressList[1]]}, ${text[addressList[2]]} ${text[addressList[3]]}`;
-        let coordinates = text[collectionName + 'Coordinates'] && {...text[collectionName + 'Coordinates']};
-        if (fullAddress !== text[collectionName + 'FullAddress']) {
+        let coordinates = text['coordinates'] && {...text['coordinates']};
+        if (fullAddress !== text['fullAddress']) {
             const geoFuncs = await geocode(fullAddress);
             if (!geoFuncs) {
                 setValidation(v=>true);
@@ -117,18 +117,18 @@ export default function ManagementForm({id, action}) {
         // build list for relationships
         let relationshipsObj = {};
         if (relationships.length > 0) {
-            relationshipsObj = Object.assign(...relationships.map(k => ({ [collectionName+k]: [] })));
+            relationshipsObj = Object.assign(...relationships.map(k => ({ [k]: [] })));
         }
 
         // try setting doc
         try {
             await setDoc(docRef, {
-                [collectionName + 'CreatedAt']: serverTimestamp(),
+                ['createdAt']: serverTimestamp(),
                 ...relationshipsObj,
                 ...text,
-                [collectionName + 'FullAddress']: fullAddress,
-                [collectionName + 'Coordinates']: coordinates,
-                [collectionName + 'LastEdited']: serverTimestamp(),
+                ['fullAddress']: fullAddress,
+                ['coordinates']: coordinates,
+                ['lastEdited']: serverTimestamp(),
             }, {merge:true}); // merge allows for updating and setting
 
             setMessage('Saved!'); // success message

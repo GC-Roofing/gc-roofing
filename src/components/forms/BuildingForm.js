@@ -21,12 +21,12 @@ export default function BuildingForm({id, action}) {
     // initialize
     const collectionName = 'building';
     const title = 'Building';
-    const fields = ['Name', 'Property', 'Unit', 'Address', 'City', 'State', 'Zip'].map(v=>collectionName+v); // fields
+    const fields = ['name', 'property', 'unit', 'address', 'city', 'state', 'zip']; // fields
     const types = [String, String, String, String, String, String, String]; // types
     const addressList = fields.slice(3, 7);
     const fieldNames = ['Building Name', 'Property', 'Unit', 'Address', 'City', 'State', 'Zip Code'];
     const relationships = [];
-    const required = [...fields.filter(v => !['buildingUnit'].includes(v))]; // required fields
+    const required = [...fields.filter(v => !['unit'].includes(v))]; // required fields
 
     let fieldIndex = -1;
     const typeFuncs = Object.assign(...fields.map((k, i) => ({ [k]: types[i] }))); // type functions
@@ -98,8 +98,8 @@ export default function BuildingForm({id, action}) {
         const docRef = doc(firestore, collectionName, formId); 
         // get full address and geocode
         const fullAddress = `${text[addressList[0]]}, ${text[addressList[1]]}, ${text[addressList[2]]} ${text[addressList[3]]}`;
-        let coordinates = text[collectionName + 'Coordinates'] && {...text[collectionName + 'Coordinates']};
-        if (fullAddress !== text[collectionName + 'FullAddress']) {
+        let coordinates = text['coordinates'] && {...text['coordinates']};
+        if (fullAddress !== text['fullAddress']) {
             const geoFuncs = await geocode(fullAddress);
             if (!geoFuncs) {
                 setValidation(v=>true);
@@ -116,7 +116,7 @@ export default function BuildingForm({id, action}) {
         // build list for relationships
         let relationshipsObj = {};
         if (relationships.length > 0) {
-            relationshipsObj = Object.assign(...relationships.map(k => ({ [collectionName+k]: [] })));
+            relationshipsObj = Object.assign(...relationships.map(k => ({ [k]: [] })));
         }
 
         // try setting doc
@@ -127,18 +127,18 @@ export default function BuildingForm({id, action}) {
 
                 // set the current form
                 transaction.set(docRef, {
-                    [collectionName + 'CreatedAt']: serverTimestamp(),
+                    ['createdAt']: serverTimestamp(),
                     ...relationshipsObj,
                     ...text,
-                    [collectionName + 'Property']: propertyRef,
-                    [collectionName + 'FullAddress']: fullAddress,
-                    [collectionName + 'Coordinates']: coordinates,
-                    [collectionName + 'LastEdited']: serverTimestamp(),
+                    ['property']: propertyRef,
+                    ['fullAddress']: fullAddress,
+                    ['coordinates']: coordinates,
+                    ['lastEdited']: serverTimestamp(),
                 }, {merge:true});
 
                 // update the reference doc
                 transaction.update(propertyRef, {
-                    propertyBuildings: propertyDoc.data().propertyBuildings.concat(docRef),
+                    buildings: propertyDoc.data().buildings.concat(docRef),
                 });
             });
             // await setDoc(docRef, {
@@ -225,10 +225,10 @@ export default function BuildingForm({id, action}) {
                 collections:['property'], 
                 pageNum:1, 
                 pageSize:25, 
-                orderBy:'propertyName', 
+                orderBy:'name', 
                 orderDirection:'asc', 
-                filter:{propertyName:text}, 
-                labels:[{key:'propertyName'}],
+                filter:{name:text}, 
+                labels:[{key:'name'}],
             });
             const data = result.data; // result.data is because it is the data of the results
             setPropertyList(data.data); // data.data is because i have an object {data: obj, length: num}
@@ -331,7 +331,7 @@ export default function BuildingForm({id, action}) {
                                     autoHighlight
                                     loading={autoLoading}
                                     options={propertyList.map(v => ({
-                                        label: v.data.propertyName,
+                                        label: v.data.name,
                                         value: v.id,
                                     }))}
                                     sx={{ width: totalWidth(1/2), m:margin }}
