@@ -22,7 +22,6 @@ initializeApp();
 // https://firebase.google.com/docs/functions/get-started
 
 exports.deletereferences = onDocumentDeleted("/property/{docId}", async (event) => {
-    console.log('cool');
     // get data
     const dataRef = event.data.ref;
     // get database
@@ -37,6 +36,28 @@ exports.deletereferences = onDocumentDeleted("/property/{docId}", async (event) 
     querySnapshot.forEach((doc) => {
         const updatedReferenceList = doc.data().entityProperties.filter(ref => ref.id !== dataRef.id);
         batch.update(doc.ref, {entityProperties: updatedReferenceList});
+    });
+
+    await batch.commit();
+
+    return { success:true };
+});
+
+exports.deletereferences = onDocumentDeleted("/building/{docId}", async (event) => {
+    // get data
+    const dataRef = event.data.ref;
+    // get database
+    const db = getFirestore()
+    // get assessment collection
+    const property = db.collection('property');
+    // querysnapshot
+    const querySnapshot = await property.where('propertyBuildings', 'array-contains', dataRef).get();
+
+    // get new reference list
+    const batch = db.batch();
+    querySnapshot.forEach((doc) => {
+        const updatedReferenceList = doc.data().propertyBuildings.filter(ref => ref.id !== dataRef.id);
+        batch.update(doc.ref, {propertyBuildings: updatedReferenceList});
     });
 
     await batch.commit();

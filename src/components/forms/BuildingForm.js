@@ -1,13 +1,14 @@
-import {useState, useEffect} from 'react';
-import { doc, collection, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
+import {useState, useEffect, useCallback} from 'react';
+import { doc, collection, runTransaction, serverTimestamp, getDoc } from "firebase/firestore";
 import {useMapsLibrary} from '@vis.gl/react-google-maps';
+import { httpsCallable } from "firebase/functions";
 
-import {firestore} from '../../firebase';
+import {firestore, functions} from '../../firebase';
 
 import TextField from '@mui/material/TextField';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-// import Autocomplete from '@mui/material/Autocomplete';
+import Autocomplete from '@mui/material/Autocomplete';
 import Button from '@mui/material/Button';
 
 
@@ -20,12 +21,12 @@ export default function BuildingForm({id, action}) {
     // initialize
     const collectionName = 'building';
     const title = 'Building';
-    const fields = ['Name', 'Address', 'City', 'State', 'Zip'].map(v=>collectionName+v); // fields
-    const types = [String, String, String, String, String]; // types
-    const addressList = fields.slice(1, 5);
-    const fieldNames = ['Building Name', 'Address', 'City', 'State', 'Zip Code'];
+    const fields = ['Name', 'Property', 'Unit', 'Address', 'City', 'State', 'Zip'].map(v=>collectionName+v); // fields
+    const types = [String, String, String, String, String, String, String]; // types
+    const addressList = fields.slice(3, 7);
+    const fieldNames = ['Building Name', 'Property', 'Unit', 'Address', 'City', 'State', 'Zip Code'];
     const relationships = [];
-    const required = [...fields]; // required fields
+    const required = [...fields.filter(v => !['buildingUnit'].includes(v))]; // required fields
 
     let fieldIndex = -1;
     const typeFuncs = Object.assign(...fields.map((k, i) => ({ [k]: types[i] }))); // type functions
@@ -120,14 +121,33 @@ export default function BuildingForm({id, action}) {
 
         // try setting doc
         try {
-            await setDoc(docRef, {
-                [collectionName + 'CreatedAt']: serverTimestamp(),
-                ...relationshipsObj,
-                ...text,
-                [collectionName + 'FullAddress']: fullAddress,
-                [collectionName + 'Coordinates']: coordinates,
-                [collectionName + 'LastEdited']: serverTimestamp(),
-            }, {merge:true}); // merge allows for updating and setting
+            await runTransaction(firestore, async (transaction) => {
+                const propertyDoc = await transaction.get(propertyRef);
+                console.log(propertyDoc.exists())
+
+
+                transaction.set(docRef, {
+                    [collectionName + 'CreatedAt']: serverTimestamp(),
+                    ...relationshipsObj,
+                    ...text,
+                    [collectionName + 'Property']: propertyRef,
+                    [collectionName + 'FullAddress']: fullAddress,
+                    [collectionName + 'Coordinates']: coordinates,
+                    [collectionName + 'LastEdited']: serverTimestamp(),
+                }, {merge:true});
+
+                transaction.update(propertyRef, {
+                    propertyBuildings: propertyDoc.data().propertyBuildings.concat(docRef),
+                });
+            });
+            // await setDoc(docRef, {
+            //     [collectionName + 'CreatedAt']: serverTimestamp(),
+            //     ...relationshipsObj,
+            //     ...text,
+            //     [collectionName + 'FullAddress']: fullAddress,
+            //     [collectionName + 'Coordinates']: coordinates,
+            //     [collectionName + 'LastEdited']: serverTimestamp(),
+            // }, {merge:true}); // merge allows for updating and setting
 
             setMessage('Saved!'); // success message
             (action) ? action() : clear(); // clear screen or do the custom action
@@ -182,6 +202,94 @@ export default function BuildingForm({id, action}) {
         return gs;
     };
 
+    ////////////
+    // custom //
+
+    // autocomplete stuff
+
+    // state
+    const [propertyRef, setPropertyRef] = useState();
+    const [propertyList, setPropertyList] = useState([]);
+    const [tempText, setTempText] = useState('');
+    const [autoLoading, setAutoLoading] = useState(false);
+
+    // get info
+    const getInfo = useCallback(async (text) => {
+        if (!text) return;
+        try {
+            // get callable function and data
+            setAutoLoading(true);
+            const filterData = httpsCallable(functions, 'filterData');
+            const result = await filterData({
+                collections:['property'], 
+                pageNum:1, 
+                pageSize:25, 
+                orderBy:'propertyName', 
+                orderDirection:'asc', 
+                filter:{['propertyName']:text}, 
+                labels:[{key:'propertyName'}],
+            });
+            const data = result.data; // result.data is because it is the data of the results
+            setPropertyList(data.data); // data.data is because i have an object {data: obj, length: num}
+        } catch(e) {
+            console.log(e.message);
+        }
+
+        setAutoLoading(false);
+    }, []);
+    
+    // delay when to actually run the function
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const debouncedInfo = useCallback(debounce(getInfo, 500), [getInfo])
+
+    // update
+    useEffect(() => {
+        debouncedInfo(tempText);
+    }, [debouncedInfo, tempText]);
+
+    // when selected
+    function handleSelect(name) {
+        return (event, value, reason) => {
+            if (reason === 'selectOption') {
+                const v = doc(firestore, 'property', value.value);
+                setPropertyRef(v);
+            } else {
+                setPropertyRef({});
+            }
+        }
+    }
+
+    // when input changes
+    function handleInputChange(name) {
+        return (event, value, reason) => {
+            // for validation
+            setText(t => ({
+                ...t,
+                [name]: value,
+            }));
+
+            // for setting the actual value
+            setTempText(t=>value);
+
+            // reset message
+            if (message) {
+                setMessage('');
+            }
+        }
+    }
+    
+    // for debounce
+    function debounce(func, delay) {
+        let timeoutId;
+        return function(...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                func.apply(this, args);
+            }, delay);
+        };
+    }
+    // end custom
+
 
     return (
         <Box sx={{height:'100%', overflow:'scroll'}}>
@@ -209,7 +317,44 @@ export default function BuildingForm({id, action}) {
                             <Typography>{formId}</Typography>
                         </Box>
                     </Box>
-                    {/* address and full address */}
+                    {/* Property and id */}
+                    <Box sx={{display:'flex', alignItems:'center'}}>
+                        {/* this is a function so that field index is saved as a consistent reference for textfield */}
+                        {(() => {
+                            const currIndex = ++fieldIndex;
+                            return (
+                                <Autocomplete
+                                    disablePortal
+                                    autoHighlight
+                                    loading={autoLoading}
+                                    options={propertyList.map(v => ({
+                                        label: v.data.propertyName,
+                                        value: v.id,
+                                    }))}
+                                    sx={{ width: totalWidth(1/2), m:margin }}
+                                    size='small'
+                                    onChange={handleSelect(fields[currIndex])}
+                                    onInputChange={handleInputChange(fields[currIndex])}
+                                    value={text[fields[currIndex]]}
+                                    isOptionEqualToValue={(option, value) => option.label === value}
+                                    renderInput={(params) => (
+                                        <TextField 
+                                            {...params}
+                                            label={fieldNames[currIndex]} 
+                                            name={fields[currIndex]}
+                                            error={validation&&!text[fields[currIndex]]}
+                                            />
+                                    )}
+                                    />
+                                );
+                            }
+                        )()}
+                        <Box>
+                            <Typography sx={{ fontWeight:'bold' }}>Property ID:</Typography>
+                            <Typography>{propertyRef?.id}</Typography>
+                        </Box>
+                    </Box>
+                    {/* unit/address and full address */}
                     <Box sx={{display:'flex', alignItems:'center'}}>
                         <TextField 
                             size='small'
@@ -217,7 +362,15 @@ export default function BuildingForm({id, action}) {
                             name={fields[fieldIndex]}
                             value={text[fields[fieldIndex]]}
                             onChange={handleChange}
-                            sx={{ width: totalWidth(1/2), m:margin }}
+                            sx={{ width: totalWidth(1/8), m:margin }}
+                            />
+                        <TextField 
+                            size='small'
+                            label={fieldNames[++fieldIndex]}
+                            name={fields[fieldIndex]}
+                            value={text[fields[fieldIndex]]}
+                            onChange={handleChange}
+                            sx={{ width: totalWidth(3/8), m:margin }}
                             required
                             error={validation&&!text[fields[fieldIndex]]}
                             />

@@ -26,7 +26,7 @@ export default function PropertyForm({id, action}) {
     const types = [String, String, String, String, String, String]; // types
     const addressList = fields.slice(2, 6);
     const fieldNames = ['Property Name', 'Entity', 'Address', 'City', 'State', 'Zip Code'];
-    const relationships = ['Transactions, Buildings'];
+    const relationships = ['Transactions', 'Buildings'];
     const required = [...fields]; // required fields
 
     let fieldIndex = -1;
@@ -338,13 +338,13 @@ export default function PropertyForm({id, action}) {
                                     size='small'
                                     onChange={handleSelect(fields[currIndex])}
                                     onInputChange={handleInputChange(fields[currIndex])}
-                                    isOptionEqualToValue={(option, value) => option.value === value.value}
+                                    value={text[fields[currIndex]]}
+                                    isOptionEqualToValue={(option, value) => option.label === value}
                                     renderInput={(params) => (
                                         <TextField 
                                             {...params}
                                             label={fieldNames[currIndex]} 
                                             name={fields[currIndex]}
-                                            value={text[fields[currIndex]]}
                                             error={validation&&!text[fields[currIndex]]}
                                             />
                                     )}
