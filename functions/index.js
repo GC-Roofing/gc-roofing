@@ -28,7 +28,7 @@ exports.deleteTransactionReferences = onDocumentDeleted("/transaction/{docId}", 
     // get database
     const db = getFirestore()
     // get assessment collection
-    const client = db.collection(data.client.split('-')[0]);
+    const client = db.collection(data.client.id.split('-')[0]);
     const management = db.collection('management');
     const property = db.collection('property');
     // querysnapshot
