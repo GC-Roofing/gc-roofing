@@ -21,7 +21,7 @@ initializeApp();
 // Create and deploy your first functions
 // https://firebase.google.com/docs/functions/get-started
 
-exports.deletereferences = onDocumentDeleted("/transaction/{docId}", async (event) => {
+exports.deleteTransactionReferences = onDocumentDeleted("/transaction/{docId}", async (event) => {
     // get data
     const dataRef = event.data.ref;
     const data = event.data.data();
@@ -60,7 +60,7 @@ exports.deletereferences = onDocumentDeleted("/transaction/{docId}", async (even
     return { success:true };
 });
 
-exports.deletereferences = onDocumentDeleted("/property/{docId}", async (event) => {
+exports.deletePropertyReferences = onDocumentDeleted("/property/{docId}", async (event) => {
     // get data
     const dataRef = event.data.ref;
     // get database
@@ -82,7 +82,7 @@ exports.deletereferences = onDocumentDeleted("/property/{docId}", async (event) 
     return { success:true };
 });
 
-exports.deletereferences = onDocumentDeleted("/building/{docId}", async (event) => {
+exports.deleteBuildingReferences = onDocumentDeleted("/building/{docId}", async (event) => {
     // get data
     const dataRef = event.data.ref;
     // get database
