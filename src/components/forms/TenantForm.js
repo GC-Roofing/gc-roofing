@@ -123,12 +123,12 @@ export default function TenantForm({id, action}) {
         // try setting doc
         try {
             await setDoc(docRef, {
-                ['createdAt']: serverTimestamp(),
+                createdAt: serverTimestamp(),
                 ...relationshipsObj,
                 ...text,
-                ['fullAddress']: fullAddress,
-                ['coordinates']: coordinates,
-                ['lastEdited']: serverTimestamp(),
+                fullAddress: fullAddress,
+                coordinates: coordinates,
+                lastEdited: serverTimestamp(),
             }, {merge:true}); // merge allows for updating and setting
 
             setMessage('Saved!'); // success message

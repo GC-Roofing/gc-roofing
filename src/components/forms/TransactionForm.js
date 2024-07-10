@@ -1,6 +1,6 @@
 import {useState, useEffect, useCallback} from 'react';
 import { doc, collection, runTransaction, serverTimestamp, getDoc } from "firebase/firestore";
-import {useMapsLibrary} from '@vis.gl/react-google-maps';
+// import {useMapsLibrary} from '@vis.gl/react-google-maps';
 import { httpsCallable } from "firebase/functions";
 
 import {firestore, functions} from '../../firebase';
@@ -22,14 +22,14 @@ export default function TransactionForm({id, action}) {
     const collectionName = 'transaction';
     const title = 'Transaction';
     const fields = ['client', 'management', 'property']; // fields
-    const types = [String, String, String]; // types
-    const addressList = fields.slice(3, 7);
+    // const types = [String, String, String]; // types
+    // const addressList = fields.slice(3, 7);
     const fieldNames = ['Client', 'Management', 'Property'];
     const relationships = ['WorkOrders', 'Buildings'];
     const required = [...fields.filter(v => !['management'].includes(v))]; // required fields
 
     let fieldIndex = -1;
-    const typeFuncs = Object.assign(...fields.map((k, i) => ({ [k]: types[i] }))); // type functions
+    // const typeFuncs = Object.assign(...fields.map((k, i) => ({ [k]: types[i] }))); // type functions
 
     // state
     const [text, setText] = useState(Object.assign(...fields.map(k => ({ [k]: '' })))); // text field stuff
@@ -68,19 +68,19 @@ export default function TransactionForm({id, action}) {
 
     // handlers
     // handles text change
-    function handleChange({target}) {
-        const value = typeFuncs[target.name](target.value);
+    // function handleChange({target}) {
+    //     const value = typeFuncs[target.name](target.value);
 
-        setText(t => ({
-            ...t,
-            [target.name]: value,
-        }));
+    //     setText(t => ({
+    //         ...t,
+    //         [target.name]: value,
+    //     }));
 
-        // reset message
-        if (message) {
-            setMessage('');
-        }
-    }
+    //     // reset message
+    //     if (message) {
+    //         setMessage('');
+    //     }
+    // }
 
     // if form submitted
     async function handleSubmit() {
@@ -135,13 +135,13 @@ export default function TransactionForm({id, action}) {
 
                 // set the current form
                 transaction.set(docRef, {
-                    ['createdAt']: serverTimestamp(),
+                    createdAt: serverTimestamp(),
                     ...relationshipsObj,
                     ...text,
                     ...objRef,
                     // [collectionName + 'FullAddress']: fullAddress,
                     // [collectionName + 'Coordinates']: coordinates,
-                    ['lastEdited']: serverTimestamp(),
+                    lastEdited: serverTimestamp(),
                 }, {merge:true});
 
                 
@@ -215,8 +215,7 @@ export default function TransactionForm({id, action}) {
 
     // init
     // const autoCompleteFields = ['Client', 'Management', 'Property'];
-    const splitValue = 'client';
-    const splitValueValues = ['entity', 'tenant'];
+    
 
     // state
     const [objRef, setObjRef] = useState(Object.assign(...fields.map(k => ({ [k]: {} }))));
@@ -226,12 +225,17 @@ export default function TransactionForm({id, action}) {
 
     // get info
     const getInfo = useCallback(async (textObj, current) => {
+        ////////////////////////////////// This should be a param if it is ever generalized
+        const splitValue = 'client';
+        const splitValueValues = ['entity', 'tenant'];
+
+
         const text = textObj[current]?.label;
         if (!text) return;
 
         // if a column can have multiple values
         let multiple;
-        if (current === 'client') {
+        if (current === splitValue) {
             multiple = splitValueValues;
         }
 

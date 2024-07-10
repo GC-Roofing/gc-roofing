@@ -21,6 +21,45 @@ initializeApp();
 // Create and deploy your first functions
 // https://firebase.google.com/docs/functions/get-started
 
+exports.deletereferences = onDocumentDeleted("/transaction/{docId}", async (event) => {
+    // get data
+    const dataRef = event.data.ref;
+    const data = event.data.data();
+    // get database
+    const db = getFirestore()
+    // get assessment collection
+    const client = db.collection(data.client.split('-')[0]);
+    const management = db.collection('management');
+    const property = db.collection('property');
+    // querysnapshot
+    const clientSnapshot = client.where('transactions', 'array-contains', dataRef).get();
+    const managementSnapshot = management.where('transactions', 'array-contains', dataRef).get();
+    const propertySnapshot = property.where('transactions', 'array-contains', dataRef).get();
+
+    const querySnapshots = await Promise.all([clientSnapshot, managementSnapshot, propertySnapshot]);
+    // get new reference list
+    const batch = db.batch();
+
+    clientSnapshot.forEach((doc) => {
+        const updatedReferenceList = doc.data().transactions.filter(ref => ref.id !== dataRef.id);
+        batch.update(doc.ref, {transactions: updatedReferenceList});
+    });
+
+    managementSnapshot.forEach((doc) => {
+        const updatedReferenceList = doc.data().transactions.filter(ref => ref.id !== dataRef.id);
+        batch.update(doc.ref, {transactions: updatedReferenceList});
+    });
+
+    propertySnapshot.forEach((doc) => {
+        const updatedReferenceList = doc.data().transactions.filter(ref => ref.id !== dataRef.id);
+        batch.update(doc.ref, {transactions: updatedReferenceList});
+    });
+
+    await batch.commit();
+
+    return { success:true };
+});
+
 exports.deletereferences = onDocumentDeleted("/property/{docId}", async (event) => {
     // get data
     const dataRef = event.data.ref;
@@ -29,13 +68,13 @@ exports.deletereferences = onDocumentDeleted("/property/{docId}", async (event) 
     // get assessment collection
     const entity = db.collection('entity');
     // querysnapshot
-    const querySnapshot = await entity.where('entityProperties', 'array-contains', dataRef).get();
+    const querySnapshot = await entity.where('propertys', 'array-contains', dataRef).get();
 
     // get new reference list
     const batch = db.batch();
     querySnapshot.forEach((doc) => {
-        const updatedReferenceList = doc.data().entityProperties.filter(ref => ref.id !== dataRef.id);
-        batch.update(doc.ref, {entityProperties: updatedReferenceList});
+        const updatedReferenceList = doc.data().propertys.filter(ref => ref.id !== dataRef.id);
+        batch.update(doc.ref, {propertys: updatedReferenceList});
     });
 
     await batch.commit();
@@ -51,13 +90,13 @@ exports.deletereferences = onDocumentDeleted("/building/{docId}", async (event) 
     // get assessment collection
     const property = db.collection('property');
     // querysnapshot
-    const querySnapshot = await property.where('propertyBuildings', 'array-contains', dataRef).get();
+    const querySnapshot = await property.where('buildings', 'array-contains', dataRef).get();
 
     // get new reference list
     const batch = db.batch();
     querySnapshot.forEach((doc) => {
-        const updatedReferenceList = doc.data().propertyBuildings.filter(ref => ref.id !== dataRef.id);
-        batch.update(doc.ref, {propertyBuildings: updatedReferenceList});
+        const updatedReferenceList = doc.data().buildings.filter(ref => ref.id !== dataRef.id);
+        batch.update(doc.ref, {buildings: updatedReferenceList});
     });
 
     await batch.commit();

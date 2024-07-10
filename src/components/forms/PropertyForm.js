@@ -129,13 +129,13 @@ export default function PropertyForm({id, action}) {
 
                 // set the current form
                 transaction.set(docRef, {
-                    ['createdAt']: serverTimestamp(),
+                    createdAt: serverTimestamp(),
                     ...relationshipsObj,
                     ...text,
-                    ['entity']: entityRef,
-                    ['fullAddress']: fullAddress,
-                    ['coordinates']: coordinates,
-                    ['lastEdited']: serverTimestamp(),
+                    entity: entityRef,
+                    fullAddress: fullAddress,
+                    coordinates: coordinates,
+                    lastEdited: serverTimestamp(),
                 }, {merge:true});
 
                 // update the reference doc
