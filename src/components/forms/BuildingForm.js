@@ -273,9 +273,9 @@ export default function BuildingForm({id, action}) {
             setTempText(t=>value);
 
             // reset message
-            if (message) {
-                setMessage('');
-            }
+            // if (message) {
+            //     setMessage('');
+            // }
         }
     }
     
@@ -329,6 +329,7 @@ export default function BuildingForm({id, action}) {
                                     openOnFocus
                                     disablePortal
                                     autoHighlight
+                                    freeSolo
                                     loading={autoLoading}
                                     options={propertyList.map(v => ({
                                         label: v.data.name,

@@ -26,7 +26,7 @@ export default function TenantForm({id, action}) {
     const addressList = fields.slice(5, 9);
     const fieldNames = ['Tenant Name', 'Tenant Type', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Unit', 'Address', 'City', 'State', 'Zip Code'];
     const relationships = ['transactions'];
-    const required = [...fields.filter(v => !['tenantUnit'].includes(v))]; // required fields
+    const required = [...fields.filter(v => !['unit'].includes(v))]; // required fields
 
     let fieldIndex = -1;
     const typeFuncs = Object.assign(...fields.map((k, i) => ({ [k]: types[i] }))); // type functions

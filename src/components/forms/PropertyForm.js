@@ -140,7 +140,7 @@ export default function PropertyForm({id, action}) {
 
                 // update the reference doc
                 transaction.update(entityRef, {
-                    properties: entityDoc.data().properties.concat(docRef),
+                    propertys: entityDoc.data().propertys.concat(docRef),
                 });
             });
 
@@ -279,9 +279,9 @@ export default function PropertyForm({id, action}) {
             setTempText(t=>value);
 
             // reset message
-            if (message) {
-                setMessage('');
-            }
+            // if (message) {
+            //     setMessage('');
+            // }
         }
     }
     
@@ -335,6 +335,7 @@ export default function PropertyForm({id, action}) {
                                 <Autocomplete
                                     openOnFocus
                                     disablePortal
+                                    freeSolo
                                     autoHighlight
                                     loading={autoLoading}
                                     options={entityList.map(v => ({

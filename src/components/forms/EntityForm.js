@@ -25,7 +25,7 @@ export default function EntityForm({id, action}) {
     const types = [String, String, String, String, String, String, String, String, String, String]; // types
     const addressList = fields.slice(4, 8);
     const fieldNames = ['Entity Name', 'Type', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Address', 'City', 'State', 'Zip Code'];
-    const relationships = ['properties', 'transactions'];
+    const relationships = ['propertys', 'transactions'];
     const required = [...fields]; // required fields
 
     let fieldIndex = -1;

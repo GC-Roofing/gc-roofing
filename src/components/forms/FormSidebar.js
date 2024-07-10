@@ -45,6 +45,7 @@ export default function FormSidebar() {
                 <SideNavbar tabs={tabs} initial={currTabIndex} 
                     header={
                         <Autocomplete
+                            disableClearable
                             openOnFocus
                             disablePortal
                             autoHighlight
@@ -96,6 +97,10 @@ const formLabels = [
         label:'Management',
         to:'management'
     },
+    {
+        label:'Transaction',
+        to:'transaction'
+    }
 ]
 
 
