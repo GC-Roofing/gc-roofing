@@ -326,6 +326,7 @@ export default function BuildingForm({id, action}) {
                             const currIndex = ++fieldIndex;
                             return (
                                 <Autocomplete
+                                    openOnFocus
                                     disablePortal
                                     autoHighlight
                                     loading={autoLoading}

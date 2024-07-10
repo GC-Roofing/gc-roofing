@@ -110,19 +110,27 @@ exports.filterData = onCall({ cors: ['https://gc-roofing.web.app', "http://local
 
         // Start joining
         // console.log('derek ------> start joining');
-        let data = collections[relations?.at(0)?.collections.shift() || collectionNames[0]]//.sort(getComparator('asc', relations[0].joinOn));
-        for (let relation of relations) {
-            let leftData = data;
-            let rightData = collections[relation.collections[0]];
+        let data;
+        if (relations) {
+            data = collections[relations.at(0)?.collections.shift()];
+            for (let relation of relations) {
+                let leftData = data;
+                let rightData = collections[relation.collections[0]];
 
-            if (relation.joinType === 'inner') {
-                data = innerJoin(leftData, rightData, relation.joinOn);
-            } else if (relation.joinType === 'left') {
-                data = leftJoin(leftData, rightData, relation.joinOn);
-            } else if (relation.joinType === 'right') {
-                data = rightJoin(leftData, rightData, relation.joinOn);
-            } else {
-                throw new HttpsError('invalid-argument', "only inner and left joins are supported");
+                if (relation.joinType === 'inner') {
+                    data = innerJoin(leftData, rightData, relation.joinOn);
+                } else if (relation.joinType === 'left') {
+                    data = leftJoin(leftData, rightData, relation.joinOn);
+                } else if (relation.joinType === 'right') {
+                    data = rightJoin(leftData, rightData, relation.joinOn);
+                } else {
+                    throw new HttpsError('invalid-argument', "only inner and left joins are supported");
+                }
+            }
+        } else {
+            data = [];
+            for (let cn of collectionNames) {
+                data.concat(collections[cn]);
             }
         }
 

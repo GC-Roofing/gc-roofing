@@ -1,34 +1,32 @@
-import {useState, useEffect, useCallback} from 'react';
-import { doc, collection, serverTimestamp, getDoc, runTransaction } from "firebase/firestore";
+import {useState, useEffect} from 'react';
+import { doc, collection, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import {useMapsLibrary} from '@vis.gl/react-google-maps';
-import { httpsCallable } from "firebase/functions";
 
 
-import {firestore, functions} from '../../firebase';
+import {firestore} from '../../firebase';
 
 import TextField from '@mui/material/TextField';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Autocomplete from '@mui/material/Autocomplete';
+// import Autocomplete from '@mui/material/Autocomplete';
 import Button from '@mui/material/Button';
 
 
 
-// if copy and no autocomplete, then remove transaction and uncomment setdoc. remove custom before return. remove autocomplete from return
 
 
 
 
-export default function PropertyForm({id, action}) {
+export default function TenantForm({id, action}) {
     // initialize
-    const collectionName = 'property';
-    const title = 'Property';
-    const fields = ['Name', 'Entity', 'Address', 'City', 'State', 'Zip'].map(v=>collectionName+v); // fields
-    const types = [String, String, String, String, String, String]; // types
-    const addressList = fields.slice(2, 6);
-    const fieldNames = ['Property Name', 'Entity', 'Address', 'City', 'State', 'Zip Code'];
-    const relationships = ['Transactions', 'Buildings'];
-    const required = [...fields]; // required fields
+    const collectionName = 'tenant';
+    const title = 'Tenant';
+    const fields = ['Name', 'Type', 'BillingName', 'BillingEmail', 'ContactName', 'ContactEmail', 'Unit', 'Address', 'City', 'State', 'Zip'].map(v=>collectionName+v); // fields
+    const types = [String, String, String, String, String, String, String, String, String, String, String]; // types
+    const addressList = fields.slice(5, 9);
+    const fieldNames = ['Tenant Name', 'Tenant Type', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Unit', 'Address', 'City', 'State', 'Zip Code'];
+    const relationships = ['Transactions'];
+    const required = [...fields.filter(v => !['tenantUnit'].includes(v))]; // required fields
 
     let fieldIndex = -1;
     const typeFuncs = Object.assign(...fields.map((k, i) => ({ [k]: types[i] }))); // type functions
@@ -42,13 +40,14 @@ export default function PropertyForm({id, action}) {
     const [formId, setFormId] = useState(id);
 
     // updates
-    // if no id provided, then generate id
+    // building id is either pregiven or auto generated
     useEffect(() => {
         if (!formId) {
             const collectionRef = collection(firestore, collectionName);
             const docRef = doc(collectionRef);
             setFormId(`${collectionName}-` + docRef.id);
         }
+
     }, [clearId, formId]);
 
     // update form if id is provided
@@ -123,36 +122,14 @@ export default function PropertyForm({id, action}) {
 
         // try setting doc
         try {
-            await runTransaction(firestore, async (transaction) => {
-                // get reference doc
-                const entityDoc = await transaction.get(entityRef);
-
-                // set the current form
-                transaction.set(docRef, {
-                    [collectionName + 'CreatedAt']: serverTimestamp(),
-                    ...relationshipsObj,
-                    ...text,
-                    [collectionName + 'Entity']: entityRef,
-                    [collectionName + 'FullAddress']: fullAddress,
-                    [collectionName + 'Coordinates']: coordinates,
-                    [collectionName + 'LastEdited']: serverTimestamp(),
-                }, {merge:true});
-
-                // update the reference doc
-                transaction.update(entityRef, {
-                    entityProperties: entityDoc.data().entityProperties.concat(docRef),
-                });
-            });
-
-            // await setDoc(docRef, {
-            //     [collectionName + 'CreatedAt']: serverTimestamp(),
-            //     ...relationshipsObj,
-            //     ...text,
-            //     ...entityRef,
-            //     [collectionName + 'FullAddress']: fullAddress,
-            //     [collectionName + 'Coordinates']: coordinates,
-            //     [collectionName + 'LastEdited']: serverTimestamp(),
-            // }, {merge:true}); // merge allows for updating and setting
+            await setDoc(docRef, {
+                [collectionName + 'CreatedAt']: serverTimestamp(),
+                ...relationshipsObj,
+                ...text,
+                [collectionName + 'FullAddress']: fullAddress,
+                [collectionName + 'Coordinates']: coordinates,
+                [collectionName + 'LastEdited']: serverTimestamp(),
+            }, {merge:true}); // merge allows for updating and setting
 
             setMessage('Saved!'); // success message
             (action) ? action() : clear(); // clear screen or do the custom action
@@ -181,8 +158,6 @@ export default function PropertyForm({id, action}) {
         setValidation(false);
         setText(Object.assign(...fields.map(k => ({ [k]: '' }))));
         setFormId(null);
-        // custom
-        setEntityRef({});
     }
 
     // geocode
@@ -208,96 +183,6 @@ export default function PropertyForm({id, action}) {
 
         return gs;
     };
-
-    ////////////
-    // custom //
-
-    // autocomplete stuff
-
-    // state
-    const [entityRef, setEntityRef] = useState();
-    const [entityList, setEntityList] = useState([]);
-    const [tempText, setTempText] = useState('');
-    const [autoLoading, setAutoLoading] = useState(false);
-
-    // get info
-    const getInfo = useCallback(async (text) => {
-        if (!text) return;
-        try {
-            // get callable function and data
-            setAutoLoading(true);
-            const filterData = httpsCallable(functions, 'filterData');
-            const result = await filterData({
-                collections:['entity'], 
-                pageNum:1, 
-                pageSize:25, 
-                orderBy:'entityName', 
-                orderDirection:'asc', 
-                filter:{entityName:text}, 
-                labels:[{key:'entityName'}],
-            });
-            const data = result.data; // result.data is because it is the data of the results
-            setEntityList(data.data); // data.data is because i have an object {data: obj, length: num}
-        } catch(e) {
-            console.log(e.message);
-        }
-
-        setAutoLoading(false);
-    }, []);
-    
-    // delay when to actually run the function
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const debouncedInfo = useCallback(debounce(getInfo, 500), [getInfo])
-
-    // update
-    useEffect(() => {
-        debouncedInfo(tempText);
-    }, [debouncedInfo, tempText]);
-
-    // when selected
-    function handleSelect(name) {
-        return (event, value, reason) => {
-            if (reason === 'selectOption') {
-                const v = doc(firestore, 'entity', value.value);
-                setEntityRef(v);
-            } else {
-                setEntityRef({});
-            }
-        }
-    }
-
-    // when input changes
-    function handleInputChange(name) {
-        return (event, value, reason) => {
-            // for validation
-            setText(t => ({
-                ...t,
-                [name]: value,
-            }));
-
-            // for setting the actual value
-            setTempText(t=>value);
-
-            // reset message
-            if (message) {
-                setMessage('');
-            }
-        }
-    }
-    
-    // for debounce
-    function debounce(func, delay) {
-        let timeoutId;
-        return function(...args) {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-                func.apply(this, args);
-            }, delay);
-        };
-    }
-    //////////////////
-    // end custom
-    //////////////////
 
 
     return (
@@ -326,45 +211,7 @@ export default function PropertyForm({id, action}) {
                             <Typography>{formId}</Typography>
                         </Box>
                     </Box>
-                    {/* entity and id */}
-                    <Box sx={{display:'flex', alignItems:'center'}}>
-                        {/* this is a function so that field index is saved as a consistent reference for textfield */}
-                        {(() => {
-                            const currIndex = ++fieldIndex;
-                            return (
-                                <Autocomplete
-                                    openOnFocus
-                                    disablePortal
-                                    autoHighlight
-                                    loading={autoLoading}
-                                    options={entityList.map(v => ({
-                                        label: v.data.entityName,
-                                        value: v.id,
-                                    }))}
-                                    sx={{ width: totalWidth(1/2), m:margin }}
-                                    size='small'
-                                    onChange={handleSelect(fields[currIndex])}
-                                    onInputChange={handleInputChange(fields[currIndex])}
-                                    value={text[fields[currIndex]]}
-                                    isOptionEqualToValue={(option, value) => option.label === value}
-                                    renderInput={(params) => (
-                                        <TextField 
-                                            {...params}
-                                            label={fieldNames[currIndex]} 
-                                            name={fields[currIndex]}
-                                            error={validation&&!text[fields[currIndex]]}
-                                            />
-                                    )}
-                                    />
-                                );
-                            }
-                        )()}
-                        <Box>
-                            <Typography sx={{ fontWeight:'bold' }}>Entity ID:</Typography>
-                            <Typography>{entityRef?.id}</Typography>
-                        </Box>
-                    </Box>
-                    {/* address and full address */}
+                    {/* type */}
                     <Box sx={{display:'flex', alignItems:'center'}}>
                         <TextField 
                             size='small'
@@ -373,6 +220,73 @@ export default function PropertyForm({id, action}) {
                             value={text[fields[fieldIndex]]}
                             onChange={handleChange}
                             sx={{ width: totalWidth(1/2), m:margin }}
+                            required
+                            error={validation&&!text[fields[fieldIndex]]}
+                            />
+                    </Box>
+                    {/* billing name and email */}
+                    <Box sx={{display:'flex', alignItems:'center'}}>
+                        <TextField 
+                            size='small'
+                            label={fieldNames[++fieldIndex]}
+                            name={fields[fieldIndex]}
+                            value={text[fields[fieldIndex]]}
+                            onChange={handleChange}
+                            sx={{ width: totalWidth(1/6), m:margin }}
+                            required
+                            error={validation&&!text[fields[fieldIndex]]}
+                            />
+                        <TextField 
+                            size='small'
+                            label={fieldNames[++fieldIndex]}
+                            name={fields[fieldIndex]}
+                            value={text[fields[fieldIndex]]}
+                            onChange={handleChange}
+                            sx={{ width: totalWidth(2/6), m:margin }}
+                            required
+                            error={validation&&!text[fields[fieldIndex]]}
+                            />
+                    </Box>
+                    {/* contact name and email */}
+                    <Box sx={{display:'flex', alignItems:'center'}}>
+                        <TextField 
+                            size='small'
+                            label={fieldNames[++fieldIndex]}
+                            name={fields[fieldIndex]}
+                            value={text[fields[fieldIndex]]}
+                            onChange={handleChange}
+                            sx={{ width: totalWidth(1/6), m:margin }}
+                            required
+                            error={validation&&!text[fields[fieldIndex]]}
+                            />
+                        <TextField 
+                            size='small'
+                            label={fieldNames[++fieldIndex]}
+                            name={fields[fieldIndex]}
+                            value={text[fields[fieldIndex]]}
+                            onChange={handleChange}
+                            sx={{ width: totalWidth(2/6), m:margin }}
+                            required
+                            error={validation&&!text[fields[fieldIndex]]}
+                            />
+                    </Box>
+                    {/* unit/address and full address */}
+                    <Box sx={{display:'flex', alignItems:'center'}}>
+                        <TextField 
+                            size='small'
+                            label={fieldNames[++fieldIndex]}
+                            name={fields[fieldIndex]}
+                            value={text[fields[fieldIndex]]}
+                            onChange={handleChange}
+                            sx={{ width: totalWidth(1/8), m:margin }}
+                            />
+                        <TextField 
+                            size='small'
+                            label={fieldNames[++fieldIndex]}
+                            name={fields[fieldIndex]}
+                            value={text[fields[fieldIndex]]}
+                            onChange={handleChange}
+                            sx={{ width: totalWidth(3/8), m:margin }}
                             required
                             error={validation&&!text[fields[fieldIndex]]}
                             />
@@ -435,5 +349,11 @@ export default function PropertyForm({id, action}) {
         </Box>
     );
 }
+
+
+
+
+
+
 
 

@@ -21,10 +21,10 @@ export default function EntityForm({id, action}) {
     // initialize
     const collectionName = 'entity';
     const title = 'Entity';
-    const fields = ['Name', 'Type', 'BillingName', 'BillingEmail', 'Address', 'City', 'State', 'Zip'].map(v=>collectionName+v); // fields
-    const types = [String, String, String, String, String, String, String, String]; // types
+    const fields = ['Name', 'Type', 'BillingName', 'BillingEmail', 'ContactName', 'ContactEmail', 'Address', 'City', 'State', 'Zip'].map(v=>collectionName+v); // fields
+    const types = [String, String, String, String, String, String, String, String, String, String]; // types
     const addressList = fields.slice(4, 8);
-    const fieldNames = ['Entity Name', 'Type', 'Billing Name', 'Billing Email', 'Address', 'City', 'State', 'Zip Code'];
+    const fieldNames = ['Entity Name', 'Type', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Address', 'City', 'State', 'Zip Code'];
     const relationships = ['Properties', 'Transactions'];
     const required = [...fields]; // required fields
 
@@ -225,6 +225,29 @@ export default function EntityForm({id, action}) {
                             />
                     </Box>
                     {/* billing name and email */}
+                    <Box sx={{display:'flex', alignItems:'center'}}>
+                        <TextField 
+                            size='small'
+                            label={fieldNames[++fieldIndex]}
+                            name={fields[fieldIndex]}
+                            value={text[fields[fieldIndex]]}
+                            onChange={handleChange}
+                            sx={{ width: totalWidth(1/6), m:margin }}
+                            required
+                            error={validation&&!text[fields[fieldIndex]]}
+                            />
+                        <TextField 
+                            size='small'
+                            label={fieldNames[++fieldIndex]}
+                            name={fields[fieldIndex]}
+                            value={text[fields[fieldIndex]]}
+                            onChange={handleChange}
+                            sx={{ width: totalWidth(2/6), m:margin }}
+                            required
+                            error={validation&&!text[fields[fieldIndex]]}
+                            />
+                    </Box>
+                    {/* contact name and email */}
                     <Box sx={{display:'flex', alignItems:'center'}}>
                         <TextField 
                             size='small'

@@ -40,6 +40,8 @@ import FormSidebar from './components/forms/FormSidebar';
 import BuildingForm from './components/forms/BuildingForm';
 import PropertyForm from './components/forms/PropertyForm';
 import EntityForm from './components/forms/EntityForm';
+import TenantForm from './components/forms/TenantForm';
+import ManagementForm from './components/forms/ManagementForm';
 
 
 
@@ -337,8 +339,12 @@ function App() {
                                     element:<EntityForm />
                                 },
                                 {
+                                    path:'tenant',
+                                    element:<TenantForm />
+                                },
+                                {
                                     path:'management',
-                                    element:'management'
+                                    element:<ManagementForm />
                                 },
                             ]
                         },
