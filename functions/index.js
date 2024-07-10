@@ -32,11 +32,11 @@ exports.deleteTransactionReferences = onDocumentDeleted("/transaction/{docId}", 
     const management = db.collection('management');
     const property = db.collection('property');
     // querysnapshot
-    const clientSnapshot = client.where('transactions', 'array-contains', dataRef).get();
-    const managementSnapshot = management.where('transactions', 'array-contains', dataRef).get();
-    const propertySnapshot = property.where('transactions', 'array-contains', dataRef).get();
+    let clientSnapshot = client.where('transactions', 'array-contains', dataRef).get();
+    let managementSnapshot = management.where('transactions', 'array-contains', dataRef).get();
+    let propertySnapshot = property.where('transactions', 'array-contains', dataRef).get();
 
-    const querySnapshots = await Promise.all([clientSnapshot, managementSnapshot, propertySnapshot]);
+    [clientSnapshot, managementSnapshot, propertySnapshot] = await Promise.all([clientSnapshot, managementSnapshot, propertySnapshot]);
     // get new reference list
     const batch = db.batch();
 
