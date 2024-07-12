@@ -26,7 +26,7 @@ export default function ProposalForm({id, action}) {
     const collectionName = 'proposal';
     const title = 'Proposal';
     const fields = ['name', 'isTenant', 'tenant', 'hasManagement', 'management', 'property', 'extraInfo']; // fields
-    const types = [String, Boolean, String, Boolean, String, String, String]; // types
+    const types = [String, Boolean, String, Boolean, String, String, String, ]; // types
     // const addressList = fields.slice(3, 7);
     const fieldNames = ['Proposal Name', 'Tenant?', 'Tenant', 'Management?', 'Management', 'Property', 'Notes'];
     const required = [...fields.filter(v => !['management', 'tenant'].includes(v))]; // required fields
@@ -59,10 +59,49 @@ export default function ProposalForm({id, action}) {
                 const docRef = doc(firestore, collectionName, id);
                 const docSnapshot = await getDoc(docRef);
                 const data = docSnapshot.data();
+                const initialObjRef = Object.assign(...fields.map(k => { /////////////
+                    if (id&&collectionFields[k]) {
+                        const relations = collectionFields[k].relations;
+                        const d = Object.keys(data).reduce((acc, key) => {
+                            const includeRelations = relations?.some(v => key.includes(v));
+                            if (key.includes(k)||includeRelations) {
+                                const [_, field] = includeRelations ? [0, key] : key.split('_');
+                                acc[field] = data[key]
+                                return acc;
+                            }
+                            return acc;
+                        }, {});
 
-                setText({
+                        if (Object.keys(d).length === 0) { 
+                            return { [k]: null }; 
+                        }
+
+                        return {[k]: {
+                            label: d.name,
+                            key: d.id,
+                            data: d,
+                            ref: doc(firestore, k, d.id),
+                        }};
+                    }
+                    return { [k]: null };
+                }));
+
+                Object.keys(data).forEach(v => { 
+                    if (v.includes('_')) {
+                        delete data[v];
+                    }
+                })
+
+                console.log('cool')
+                console.log(data)
+                console.log(initialObjRef);
+
+                setObjRef(initialObjRef); 
+
+                setText(t => ({ 
+                    ...initialObjRef,
                     ...data,
-                });
+                }));
             }
             
             setFormInfo();
@@ -145,13 +184,15 @@ export default function ProposalForm({id, action}) {
                         }
                     })
 
-                    text[key + '_id'] = objRef[key].key;
-
-                    // remove this key from text
-                    delete text[key];
+                    acc[key + '_id'] = objRef[key].key;
 
                     return acc;
                 }, {});
+
+                // clean text
+                Object.keys(collectionFields).forEach(v => { 
+                    delete text[v];
+                })
 
                 // set the current form
                 transaction.set(docRef, {
@@ -159,7 +200,7 @@ export default function ProposalForm({id, action}) {
                     ...text,
                     ...fullObjRef,
                     lastEdited: serverTimestamp(),
-                }, {merge:true});
+                }, {merge:false});
             });
             // await setDoc(docRef, {
             //     [collectionName + 'CreatedAt']: serverTimestamp(),
@@ -195,7 +236,7 @@ export default function ProposalForm({id, action}) {
     // clear form
     function clear() {
         setValidation(false);
-        setText(Object.assign(...fields.map(k => ({ [k]: '' }))));
+        setText(Object.assign(...fields.map(k => ({ [k]: typeFuncs[k]('') }))));
         setFormId(null);
         setObjRef(Object.assign(...fields.map(k => ({ [k]: null }))));
         setObjList(Object.assign(...fields.map(k => ({ [k]: [] }))));
@@ -237,7 +278,8 @@ export default function ProposalForm({id, action}) {
             keys: ['name', 'fullAddress']
                 .concat(['name', 'type', 'billingName', 'billingEmail', 'contactName', 'contactEmail', 'fullAddress', 'address', 'city', 'state', 'zip', 'coordinates', 'id'].map(v=>'entity_'+v))
                 .concat(['coordinates', 'address', 'city', 'state', 'zip']),
-            labels: ['Property Name', 'Address', 'Entity Name', 'Entity Type', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Entity Address']
+            labels: ['Property Name', 'Address', 'Entity Name', 'Entity Type', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Entity Address'],
+            relations: ['entity'],
         },
         tenant: {
             keys: ['name', 'type', 'billingName', 'billingEmail', 'contactName', 'contactEmail', 'fullAddress']
@@ -248,7 +290,7 @@ export default function ProposalForm({id, action}) {
             keys: ['name', 'billingName', 'billingEmail', 'contactName', 'contactEmail', 'fullAddress']
                 .concat(['coordinates', 'address', 'city', 'state', 'zip']),
             labels: ['Management Name', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Management Address']
-        }
+        },
     }), []);
 
     // state
@@ -315,7 +357,10 @@ export default function ProposalForm({id, action}) {
                 }));
                 setText(t => ({
                     ...t,
-                    [current]: {...value} 
+                    [current]: { 
+                        ...value,
+                        ref: v,
+                    } 
                 }));
             } else {
                 setObjRef(t => ({
@@ -335,29 +380,43 @@ export default function ProposalForm({id, action}) {
         return () => setCurrent(name);
     }
 
+    // when closed
+    function handleClose(name) {
+        return (event, reason) => {
+            if (reason !== 'selectOption'&&text[name]?.label!==objRef[name]?.label) {
+                setText(t => ({
+                    ...t,
+                    [name]: null,
+                }));
+                setObjRef(t => ({
+                    ...t,
+                    [name]: null
+                }));
+            }
+        }
+    }
+
     // when input changes
     function handleInputChange(name) {
         return (event, value, reason) => {
             setText(t => ({
                 ...t,
                 [name]: {
+                    ...t[name],
                     label:value,
-                    key: null,
-                    data: null,
                 },
             }));
 
-            if (value==='') {
+            if (reason === 'reset'&&value!==objRef[name]?.label) {
                 setText(t => ({
                     ...t,
                     [name]: null,
                 }));
+                setObjRef(t => ({
+                    ...t,
+                    [name]: null
+                }));
             }
-
-            // reset message
-            // if (message) {
-            //     setMessage('');
-            // }
         }
     }
 
@@ -409,10 +468,8 @@ export default function ProposalForm({id, action}) {
                                 size='small'
                                 label={fieldNames[++fieldIndex]}
                                 name={fields[fieldIndex]}
-                                required
-                                value={text[fields[fieldIndex]]}
+                                checked={text[fields[fieldIndex]]}
                                 onChange={handleChange}
-                                error={validation&&!text[fields[fieldIndex]]}
                                 />
                         </Box>
                         {(() => {
@@ -431,10 +488,11 @@ export default function ProposalForm({id, action}) {
                                     }))}
                                     sx={{ width: totalWidth(7/16), m:margin }}
                                     size='small'
+                                    onClose={handleClose(fields[currIndex])}
                                     onOpen={handleOpen(fields[currIndex])}
                                     onChange={handleSelect(fields[currIndex])}
                                     onInputChange={handleInputChange(fields[currIndex])}
-                                    value={(text[fields[currIndex]]?.key) ? text[fields[currIndex]] : null}
+                                    value={(text[fields[currIndex]]?.key)&&text[fields[currIndex-1]] ? text[fields[currIndex]] : null}
                                     isOptionEqualToValue={(option, value) => option.key === value.key}
                                     renderInput={(params) => (
                                         <TextField 
@@ -475,10 +533,8 @@ export default function ProposalForm({id, action}) {
                                 size='small'
                                 label={fieldNames[++fieldIndex]}
                                 name={fields[fieldIndex]}
-                                required
-                                value={text[fields[fieldIndex]]}
+                                checked={text[fields[fieldIndex]]}
                                 onChange={handleChange}
-                                error={validation&&!text[fields[fieldIndex]]}
                                 />
                         </Box>
                         {(() => {
@@ -497,10 +553,11 @@ export default function ProposalForm({id, action}) {
                                     }))}
                                     sx={{ width: totalWidth(7/16), m:margin }}
                                     size='small'
+                                    onClose={handleClose(fields[currIndex])}
                                     onOpen={handleOpen(fields[currIndex])}
                                     onChange={handleSelect(fields[currIndex])}
                                     onInputChange={handleInputChange(fields[currIndex])}
-                                    value={(text[fields[currIndex]]?.key) ? text[fields[currIndex]] : null}
+                                    value={(text[fields[currIndex]]?.key)&&text[fields[currIndex-1]] ? text[fields[currIndex]] : null}
                                     isOptionEqualToValue={(option, value) => option.key === value.key}
                                     renderInput={(params) => (
                                         <TextField 
@@ -551,6 +608,7 @@ export default function ProposalForm({id, action}) {
                                     }))}
                                     sx={{ width: totalWidth(1/2), m:margin }}
                                     size='small'
+                                    onClose={handleClose(fields[currIndex])}
                                     onOpen={handleOpen(fields[currIndex])}
                                     onChange={handleSelect(fields[currIndex])}
                                     onInputChange={handleInputChange(fields[currIndex])}

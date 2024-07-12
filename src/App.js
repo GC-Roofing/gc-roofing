@@ -333,11 +333,11 @@ function App() {
                                 },
                                 {
                                     path:'property',
-                                    element:<PropertyForm />
+                                    element:<PropertyForm id='property-NmnMYn7mT96hPWNM8CUQ' />
                                 },
                                 {
                                     path:'building',
-                                    element:<BuildingForm />
+                                    element:<BuildingForm id='building-paTvSGENZW7W4qagF8r9' />
                                 },
                                 {
                                     path:'entity',
@@ -353,7 +353,7 @@ function App() {
                                 },
                                 {
                                     path:'proposal',
-                                    element:<ProposalForm />
+                                    element:<ProposalForm id='proposal-2iAhdkvF08SXlaGxx7SA' />
                                 }
                             ]
                         },

@@ -56,10 +56,49 @@ export default function BuildingForm({id, action}) {
                 const docRef = doc(firestore, collectionName, id);
                 const docSnapshot = await getDoc(docRef);
                 const data = docSnapshot.data();
+                const initialObjRef = Object.assign(...fields.map(k => { 
+                    if (id&&collectionFields[k]) {
+                        const relations = collectionFields[k].relations;
+                        const d = Object.keys(data).reduce((acc, key) => {
+                            const includeRelations = relations?.some(v => key.includes(v));
+                            if (key.includes(k)||includeRelations) {
+                                const [_, field] = includeRelations ? [0, key] : key.split('_');
+                                acc[field] = data[key]
+                                return acc;
+                            }
+                            return acc;
+                        }, {});
 
-                setText({
+                        if (Object.keys(d).length === 0) { 
+                            return { [k]: null }; 
+                        }
+
+                        return {[k]: {
+                            label: d.name,
+                            key: d.id,
+                            data: d,
+                            ref: doc(firestore, k, d.id),
+                        }};
+                    }
+                    return { [k]: null };
+                }));
+
+                Object.keys(data).forEach(v => { 
+                    if (v.includes('_')) {
+                        delete data[v];
+                    }
+                })
+
+                console.log('cool')
+                console.log(data)
+                console.log(initialObjRef);
+
+                setObjRef(initialObjRef); 
+
+                setText(t => ({ 
+                    ...initialObjRef,
                     ...data,
-                });
+                }));
             }
             
             setFormInfo();
@@ -137,13 +176,15 @@ export default function BuildingForm({id, action}) {
                         }
                     })
 
-                    text[key + '_id'] = objRef[key].key;
-
-                    // remove this key from text
-                    delete text[key];
+                    acc[key + '_id'] = objRef[key].key;
 
                     return acc;
                 }, {});
+
+                // clean text
+                Object.keys(collectionFields).forEach(v => { ///////////////////
+                    delete text[v];
+                })
 
                 // set the current form
                 transaction.set(docRef, {
@@ -232,7 +273,8 @@ export default function BuildingForm({id, action}) {
             keys: ['name', 'fullAddress']
                 .concat(['name', 'type', 'billingName', 'billingEmail', 'contactName', 'contactEmail', 'fullAddress', 'address', 'city', 'state', 'zip', 'coordinates', 'id'].map(v=>'entity_'+v))
                 .concat(['coordinates', 'address', 'city', 'state', 'zip']),
-            labels: ['Property Name', 'Address', 'Entity Name', 'Entity Type', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Entity Address']
+            labels: ['Property Name', 'Address', 'Entity Name', 'Entity Type', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Entity Address'],
+            relations: ['entity']
         }
     }), []);
 
@@ -301,7 +343,10 @@ export default function BuildingForm({id, action}) {
                 }));
                 setText(t => ({
                     ...t,
-                    [current]: {...value} 
+                    [current]: {
+                        ...value,
+                        ref: v,
+                    } 
                 }));
             } else {
                 setObjRef(t => ({
@@ -321,29 +366,32 @@ export default function BuildingForm({id, action}) {
         return () => setCurrent(name);
     }
 
+    // when closed
+    function handleClose(name) {
+        return (event, reason) => {
+            if (reason !== 'selectOption'&&text[name]?.label!==objRef[name]?.label) {
+                setText(t => ({
+                    ...t,
+                    [name]: null,
+                }));
+                setObjRef(t => ({
+                    ...t,
+                    [name]: null
+                }));
+            }
+        }
+    }
+
     // when input changes
     function handleInputChange(name) {
         return (event, value, reason) => {
             setText(t => ({
                 ...t,
                 [name]: {
+                    ...t[name],
                     label:value,
-                    key: null,
-                    data: null,
                 },
             }));
-
-            if (value==='') {
-                setText(t => ({
-                    ...t,
-                    [name]: null,
-                }));
-            }
-
-            // reset message
-            // if (message) {
-            //     setMessage('');
-            // }
         }
     }
 
@@ -471,6 +519,7 @@ export default function BuildingForm({id, action}) {
                                     }))}
                                     sx={{ width: totalWidth(1/2), m:margin }}
                                     size='small'
+                                    onClose={handleClose(fields[currIndex])}
                                     onOpen={handleOpen(fields[currIndex])}
                                     onChange={handleSelect(fields[currIndex])}
                                     onInputChange={handleInputChange(fields[currIndex])}

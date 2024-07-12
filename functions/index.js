@@ -21,43 +21,45 @@ initializeApp();
 // Create and deploy your first functions
 // https://firebase.google.com/docs/functions/get-started
 
-exports.deleteProposalReferences = onDocumentDeleted("/proposal/{docId}", async (event) => {
-    // get data
-    const dataRef = event.data.ref;
-    const data = event.data.data();
-    // get database
-    const db = getFirestore()
-    // get assessment collection
-    const tenant = db.collection('tenant');
-    const management = db.collection('management');
-    const property = db.collection('property');
-    // querysnapshot
-    let tenantSnapshot = tenant.where('proposals', 'array-contains', dataRef).get();
-    let managementSnapshot = management.where('proposals', 'array-contains', dataRef).get();
-    let propertySnapshot = property.where('proposals', 'array-contains', dataRef).get();
+exports.deleteProposalReferences = onDocumentWritten("/proposal/{docId}", async (event) => {
+    if (!event.data.after.exists) {
+        // get data
+        const dataRef = event.data.ref;
+        const data = event.data.data();
+        // get database
+        const db = getFirestore()
+        // get assessment collection
+        const tenant = db.collection('tenant');
+        const management = db.collection('management');
+        const property = db.collection('property');
+        // querysnapshot
+        let tenantSnapshot = tenant.where('proposals', 'array-contains', dataRef).get();
+        let managementSnapshot = management.where('proposals', 'array-contains', dataRef).get();
+        let propertySnapshot = property.where('proposals', 'array-contains', dataRef).get();
 
-    [tenantSnapshot, managementSnapshot, propertySnapshot] = await Promise.all([tenantSnapshot, managementSnapshot, propertySnapshot]);
-    // get new reference list
-    const batch = db.batch();
+        [tenantSnapshot, managementSnapshot, propertySnapshot] = await Promise.all([tenantSnapshot, managementSnapshot, propertySnapshot]);
+        // get new reference list
+        const batch = db.batch();
 
-    tenantSnapshot.forEach((doc) => {
-        const updatedReferenceList = doc.data().proposals.filter(ref => ref.id !== dataRef.id);
-        batch.update(doc.ref, {proposals: updatedReferenceList});
-    });
+        tenantSnapshot.forEach((doc) => {
+            const updatedReferenceList = doc.data().proposals.filter(ref => ref.id !== dataRef.id);
+            batch.update(doc.ref, {proposals: updatedReferenceList});
+        });
 
-    managementSnapshot.forEach((doc) => {
-        const updatedReferenceList = doc.data().proposals.filter(ref => ref.id !== dataRef.id);
-        batch.update(doc.ref, {proposals: updatedReferenceList});
-    });
+        managementSnapshot.forEach((doc) => {
+            const updatedReferenceList = doc.data().proposals.filter(ref => ref.id !== dataRef.id);
+            batch.update(doc.ref, {proposals: updatedReferenceList});
+        });
 
-    propertySnapshot.forEach((doc) => {
-        const updatedReferenceList = doc.data().proposals.filter(ref => ref.id !== dataRef.id);
-        batch.update(doc.ref, {proposals: updatedReferenceList});
-    });
+        propertySnapshot.forEach((doc) => {
+            const updatedReferenceList = doc.data().proposals.filter(ref => ref.id !== dataRef.id);
+            batch.update(doc.ref, {proposals: updatedReferenceList});
+        });
 
-    await batch.commit();
+        await batch.commit();
 
-    return { success:true };
+        return { success:true };
+    }
 });
 
 exports.deletePropertyReferences = onDocumentDeleted("/property/{docId}", async (event) => {

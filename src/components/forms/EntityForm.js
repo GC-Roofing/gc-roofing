@@ -130,7 +130,7 @@ export default function EntityForm({id, action}) {
                 fullAddress: fullAddress,
                 coordinates: coordinates,
                 lastEdited: serverTimestamp(),
-            }, {merge:true}); // merge allows for updating and setting
+            }, {merge:false}); // merge allows for updating and setting
 
             setMessage('Saved!'); // success message
             (action) ? action() : clear(); // clear screen or do the custom action

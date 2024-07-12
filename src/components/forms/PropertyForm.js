@@ -60,9 +60,39 @@ export default function PropertyForm({id, action}) {
                 const docSnapshot = await getDoc(docRef);
                 const data = docSnapshot.data();
 
-                setText({
+                setObjRef(Object.assign(...fields.map(k => {
+                    if (id&&collectionFields[k]) {
+                        const d = Object.keys(data).reduce((acc, key) => {
+                            if (key.includes(k)) {
+                                const [col, field] = key.split('_');
+                                acc[field] = data[key]
+                                return acc;
+                            }
+                            return acc;
+                        }, {});
+
+                        text[k] = {
+                            label: d.name,
+                            key: d.id,
+                            data: d,
+                            ref: doc(firestore, k, d.id),
+                        };
+
+                        return {[k]: {
+                            label: d.name,
+                            key: d.id,
+                            data: d,
+                            ref: doc(firestore, k, d.id),
+                        }};
+                    }
+                    return { [k]: null };
+                })));
+
+                setText(t => ({
+                    ...t,
+                    ...text,
                     ...data,
-                });
+                }));
             }
             
             setFormInfo();
@@ -147,10 +177,9 @@ export default function PropertyForm({id, action}) {
                         }
                     })
 
-                    text[key + '_id'] = objRef[key].key;
+                    acc[key + '_id'] = objRef[key].key;
 
-                    // remove this key from text
-                    delete text[key]
+                    delete text[key];
 
                     return acc;
                 }, {});
@@ -164,7 +193,7 @@ export default function PropertyForm({id, action}) {
                     fullAddress: fullAddress,
                     coordinates: coordinates,
                     lastEdited: serverTimestamp(),
-                }, {merge:true});
+                }, {merge:false});
             });
 
             // await setDoc(docRef, {
@@ -241,7 +270,8 @@ export default function PropertyForm({id, action}) {
     // const autoCompleteFields = ['Client', 'Management', 'Property'];
     const collectionFields = useMemo(() => ({
         entity: {
-            keys: ['name', 'type', 'billingName', 'billingEmail', 'contactName', 'contactEmail', 'fullAddress', 'address', 'city', 'state', 'zip', 'coordinates'],
+            keys: ['name', 'type', 'billingName', 'billingEmail', 'contactName', 'contactEmail', 'fullAddress', 'address']
+                .concat(['city', 'state', 'zip', 'coordinates']),
             labels: ['Entity Name', 'Entity Type', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Address']
         }
     }), [])
@@ -304,19 +334,20 @@ export default function PropertyForm({id, action}) {
                 const v = doc(firestore, value.key.split('-')[0], value.key);
                 setObjRef(t => ({
                     ...t,
-                    [current]: {
+                    [name]: {
                         ...value,
                         ref: v,
                     }
                 }));
                 setText(t => ({
                     ...t,
-                    [current]: {...value} 
+                    [name]: {...value} 
                 }));
             } else {
+                console.log('cool')
                 setObjRef(t => ({
                     ...t,
-                    [current]: null
+                    [name]: null
                 }));
             }
 
@@ -331,29 +362,32 @@ export default function PropertyForm({id, action}) {
         return () => setCurrent(name);
     }
 
+    // when closed
+    function handleClose(name) {
+        return (event, reason) => {
+            if (reason !== 'selectOption'&&text[name]?.label!==objRef[name]?.label) {
+                setText(t => ({
+                    ...t,
+                    [name]: null,
+                }));
+                setObjRef(t => ({
+                    ...t,
+                    [name]: null
+                }));
+            }
+        }
+    }
+
     // when input changes
     function handleInputChange(name) {
         return (event, value, reason) => {
             setText(t => ({
                 ...t,
                 [name]: {
+                    ...t[name],
                     label:value,
-                    key: null,
-                    data: null,
                 },
             }));
-
-            if (value==='') {
-                setText(t => ({
-                    ...t,
-                    [name]: null,
-                }));
-            }
-
-            // reset message
-            // if (message) {
-            //     setMessage('');
-            // }
         }
     }
 
@@ -474,6 +508,7 @@ export default function PropertyForm({id, action}) {
                                     }))}
                                     sx={{ width: totalWidth(1/2), m:margin }}
                                     size='small'
+                                    onClose={handleClose(fields[currIndex])}
                                     onOpen={handleOpen(fields[currIndex])}
                                     onChange={handleSelect(fields[currIndex])}
                                     onInputChange={handleInputChange(fields[currIndex])}
