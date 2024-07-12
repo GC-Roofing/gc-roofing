@@ -161,8 +161,10 @@ export default function PropertyForm({id, action}) {
                 const objDocList = await Promise.all(objRefKeys.map(key => transaction.get(objRef[key].ref)));
                 // update the reference doc
                 objRefKeys.forEach((key) => {
+                    const relatedList = objDocList[objRefKeys.indexOf(key)].data()[collectionName+'s'];
+                    if (relatedList.filter(v => v.id === docRef.id).length > 0) return;
                     transaction.update(objRef[key].ref, {
-                        [collectionName+'s']: objDocList[objRefKeys.indexOf(key)].data()[collectionName+'s'].concat(docRef)
+                        [collectionName+'s']: relatedList.concat(docRef)
                     });
                 });
 
