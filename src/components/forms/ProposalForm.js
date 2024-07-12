@@ -145,6 +145,8 @@ export default function ProposalForm({id, action}) {
                         }
                     })
 
+                    text[key + '_id'] = objRef[key].key;
+
                     // remove this key from text
                     delete text[key];
 

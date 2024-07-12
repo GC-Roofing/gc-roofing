@@ -21,7 +21,7 @@ initializeApp();
 // Create and deploy your first functions
 // https://firebase.google.com/docs/functions/get-started
 
-exports.deleteTransactionReferences = onDocumentDeleted("/transaction/{docId}", async (event) => {
+exports.deleteProposalReferences = onDocumentDeleted("/proposal/{docId}", async (event) => {
     // get data
     const dataRef = event.data.ref;
     const data = event.data.data();
@@ -32,27 +32,27 @@ exports.deleteTransactionReferences = onDocumentDeleted("/transaction/{docId}", 
     const management = db.collection('management');
     const property = db.collection('property');
     // querysnapshot
-    let clientSnapshot = client.where('transactions', 'array-contains', dataRef).get();
-    let managementSnapshot = management.where('transactions', 'array-contains', dataRef).get();
-    let propertySnapshot = property.where('transactions', 'array-contains', dataRef).get();
+    let clientSnapshot = client.where('proposals', 'array-contains', dataRef).get();
+    let managementSnapshot = management.where('proposals', 'array-contains', dataRef).get();
+    let propertySnapshot = property.where('proposals', 'array-contains', dataRef).get();
 
     [clientSnapshot, managementSnapshot, propertySnapshot] = await Promise.all([clientSnapshot, managementSnapshot, propertySnapshot]);
     // get new reference list
     const batch = db.batch();
 
     clientSnapshot.forEach((doc) => {
-        const updatedReferenceList = doc.data().transactions.filter(ref => ref.id !== dataRef.id);
-        batch.update(doc.ref, {transactions: updatedReferenceList});
+        const updatedReferenceList = doc.data().proposals.filter(ref => ref.id !== dataRef.id);
+        batch.update(doc.ref, {proposals: updatedReferenceList});
     });
 
     managementSnapshot.forEach((doc) => {
-        const updatedReferenceList = doc.data().transactions.filter(ref => ref.id !== dataRef.id);
-        batch.update(doc.ref, {transactions: updatedReferenceList});
+        const updatedReferenceList = doc.data().proposals.filter(ref => ref.id !== dataRef.id);
+        batch.update(doc.ref, {proposals: updatedReferenceList});
     });
 
     propertySnapshot.forEach((doc) => {
-        const updatedReferenceList = doc.data().transactions.filter(ref => ref.id !== dataRef.id);
-        batch.update(doc.ref, {transactions: updatedReferenceList});
+        const updatedReferenceList = doc.data().proposals.filter(ref => ref.id !== dataRef.id);
+        batch.update(doc.ref, {proposals: updatedReferenceList});
     });
 
     await batch.commit();

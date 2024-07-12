@@ -147,8 +147,10 @@ export default function PropertyForm({id, action}) {
                         }
                     })
 
+                    text[key + '_id'] = objRef[key].key;
+
                     // remove this key from text
-                    delete text[key];
+                    delete text[key]
 
                     return acc;
                 }, {});

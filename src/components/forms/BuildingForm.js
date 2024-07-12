@@ -137,6 +137,8 @@ export default function BuildingForm({id, action}) {
                         }
                     })
 
+                    text[key + '_id'] = objRef[key].key;
+
                     // remove this key from text
                     delete text[key];
 
