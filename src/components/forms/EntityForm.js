@@ -8,6 +8,7 @@ import {firestore} from '../../firebase';
 import TextField from '@mui/material/TextField';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import MenuItem from '@mui/material/MenuItem';
 // import Autocomplete from '@mui/material/Autocomplete';
 import Button from '@mui/material/Button';
 
@@ -23,9 +24,9 @@ export default function EntityForm({id, action}) {
     const title = 'Entity';
     const fields = ['name', 'type', 'billingName', 'billingEmail', 'contactName', 'contactEmail', 'address', 'city', 'state', 'zip']; // fields
     const types = [String, String, String, String, String, String, String, String, String, String]; // types
-    const addressList = fields.slice(4, 8);
+    const addressList = fields.slice(6, 10);
     const fieldNames = ['Entity Name', 'Type', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Address', 'City', 'State', 'Zip Code'];
-    const relationships = ['propertys', 'transactions'];
+    const relationships = ['propertys'];
     const required = [...fields]; // required fields
 
     let fieldIndex = -1;
@@ -214,6 +215,7 @@ export default function EntityForm({id, action}) {
                     {/* type */}
                     <Box sx={{display:'flex', alignItems:'center'}}>
                         <TextField 
+                            select
                             size='small'
                             label={fieldNames[++fieldIndex]}
                             name={fields[fieldIndex]}
@@ -222,7 +224,13 @@ export default function EntityForm({id, action}) {
                             sx={{ width: totalWidth(1/2), m:margin }}
                             required
                             error={validation&&!text[fields[fieldIndex]]}
-                            />
+                            >
+                            {['Business', 'Government', 'Industrial', 'Mixed', 'Non-Profit', 'Office', 'Residential', 'Retail', 'RVer'].map((option) => (
+                                <MenuItem key={option} value={option}>
+                                    {option}
+                                </MenuItem>
+                            ))}
+                        </TextField>
                     </Box>
                     {/* billing name and email */}
                     <Box sx={{display:'flex', alignItems:'center'}}>
@@ -284,7 +292,15 @@ export default function EntityForm({id, action}) {
                             />
                         <Box>
                             <Typography sx={{ fontWeight:'bold' }}>Full Address:</Typography>
-                            <Typography>{text[fields[fieldIndex]]||'[address]'}, {text[fields[fieldIndex+1]]||'[city]'}, {text[fields[fieldIndex+2]]||'[state]'} {text[fields[fieldIndex+3]]||'[zip]'}</Typography>
+                            <Typography>
+                                {text[fields[fieldIndex]]}
+                                {(text[fields[fieldIndex]])&&', '}
+                                {text[fields[fieldIndex+1]]}
+                                {(text[fields[fieldIndex+1]])&&', '}
+                                {text[fields[fieldIndex+2]]}
+                                {(text[fields[fieldIndex+2]])&&' '}
+                                {text[fields[fieldIndex+3]]}
+                            </Typography>
                         </Box>
                     </Box>
                     {/* city state zip */}

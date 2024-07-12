@@ -1,6 +1,5 @@
 import {useState, useEffect} from 'react';
 import { doc, collection, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
-import {useMapsLibrary} from '@vis.gl/react-google-maps';
 
 
 import {firestore} from '../../firebase';
@@ -8,6 +7,7 @@ import {firestore} from '../../firebase';
 import TextField from '@mui/material/TextField';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import MenuItem from '@mui/material/MenuItem';
 // import Autocomplete from '@mui/material/Autocomplete';
 import Button from '@mui/material/Button';
 
@@ -17,16 +17,14 @@ import Button from '@mui/material/Button';
 
 
 
-export default function ManagementForm({id, action}) {
+export default function ServiceRequestForm({id, action}) {
     // initialize
-    const collectionName = 'management';
-    const title = 'Management';
-    const fields = ['name', 'billingName', 'billingEmail', 'contactName', 'contactEmail', 'address', 'city', 'state', 'zip']; // fields
-    const types = [String, String, String, String, String, String, String, String, String]; // types
-    const addressList = fields.slice(5, 9);
-    const fieldNames = ['Management Name', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Address', 'City', 'State', 'Zip Code'];
-    const relationships = ['proposals'];
-    const required = [...fields]; // required fields
+    const collectionName = 'serviceRequest';
+    const title = 'Service Request';
+    const fields = ['firstName', 'lastName', 'email', 'phoneNumber', 'zip', 'jobType', 'message']; // fields
+    const types = [String, String, String, String, String, String, String]; // types
+    const fieldNames = ['First Name', 'Last Name', 'Email', 'Phone Number', 'Zip Code', 'Service Requested', 'Message'];
+    const required = ['firstName', 'lastName', 'email', 'phoneNumber', 'zip', 'jobType']; // required fields
 
     let fieldIndex = -1;
     const typeFuncs = Object.assign(...fields.map((k, i) => ({ [k]: types[i] }))); // type functions
@@ -96,38 +94,13 @@ export default function ManagementForm({id, action}) {
         setLoading(true);
 
         // get doc
-        const docRef = doc(firestore, collectionName, formId); 
-        // get full address and geocode
-        const fullAddress = `${text[addressList[0]]}, ${text[addressList[1]]}, ${text[addressList[2]]} ${text[addressList[3]]}`;
-        let coordinates = text['coordinates'] && {...text['coordinates']};
-        if (fullAddress !== text['fullAddress']) {
-            const geoFuncs = await geocode(fullAddress);
-            if (!geoFuncs) {
-                setValidation(v=>true);
-                setMessage('Address does not exist');
-                setLoading(false);
-                return;
-            }
-            coordinates = {
-                lat: geoFuncs.lat(),
-                lng: geoFuncs.lng(),
-            }
-        }
-
-        // build list for relationships
-        let relationshipsObj = {};
-        if (relationships.length > 0) {
-            relationshipsObj = Object.assign(...relationships.map(k => ({ [k]: [] })));
-        }
+        const docRef = doc(firestore, collectionName, formId);
 
         // try setting doc
         try {
             await setDoc(docRef, {
                 createdAt: serverTimestamp(),
-                ...relationshipsObj,
                 ...text,
-                fullAddress: fullAddress,
-                coordinates: coordinates,
                 lastEdited: serverTimestamp(),
             }, {merge:true}); // merge allows for updating and setting
 
@@ -160,30 +133,6 @@ export default function ManagementForm({id, action}) {
         setFormId(null);
     }
 
-    // geocode
-    const geocoderLibrary = useMapsLibrary('geocoding'); // library
-    async function geocode(address) {
-        const geocoder = new geocoderLibrary.Geocoder();
-        let gs = null;
-
-        const gr = {
-            address: address,
-        };
-
-        try {
-            await geocoder.geocode(gr, (results, status) => {
-                if (status === 'OK') {
-                    gs = results?.at(0).geometry.location;
-                } else {
-                    console.log(status);
-                    console.log(address)
-                }
-            });
-        } catch (e) {console.log(e)};
-
-        return gs;
-    };
-
 
     return (
         <Box sx={{height:'100%', overflow:'scroll'}}>
@@ -194,125 +143,97 @@ export default function ManagementForm({id, action}) {
                 </Box>
                 {/* Form */}
                 <Box sx={{p:'1%', width:totalWidth(1)}}>
-                    {/* name and id */}
+                    {/* first and last */}
                     <Box sx={{display:'flex', alignItems:'center'}}>
                         <TextField 
                             size='small'
                             label={fieldNames[++fieldIndex]}
                             name={fields[fieldIndex]}
-                            sx={{ width: totalWidth(1/2), m:margin }}
-                            required
-                            value={text[fields[fieldIndex]]}
-                            onChange={handleChange}
-                            error={validation&&!text[fields[fieldIndex]]}
-                            />
-                        <Box>
-                            <Typography sx={{ fontWeight:'bold' }}>{title} ID:</Typography>
-                            <Typography>{formId}</Typography>
-                        </Box>
-                    </Box>
-                    {/* billing name and email */}
-                    <Box sx={{display:'flex', alignItems:'center'}}>
-                        <TextField 
-                            size='small'
-                            label={fieldNames[++fieldIndex]}
-                            name={fields[fieldIndex]}
-                            value={text[fields[fieldIndex]]}
-                            onChange={handleChange}
-                            sx={{ width: totalWidth(1/6), m:margin }}
-                            required
-                            error={validation&&!text[fields[fieldIndex]]}
-                            />
-                        <TextField 
-                            size='small'
-                            label={fieldNames[++fieldIndex]}
-                            name={fields[fieldIndex]}
-                            value={text[fields[fieldIndex]]}
-                            onChange={handleChange}
-                            sx={{ width: totalWidth(2/6), m:margin }}
-                            required
-                            error={validation&&!text[fields[fieldIndex]]}
-                            />
-                    </Box>
-                    {/* Contact name and email */}
-                    <Box sx={{display:'flex', alignItems:'center'}}>
-                        <TextField 
-                            size='small'
-                            label={fieldNames[++fieldIndex]}
-                            name={fields[fieldIndex]}
-                            value={text[fields[fieldIndex]]}
-                            onChange={handleChange}
-                            sx={{ width: totalWidth(1/6), m:margin }}
-                            required
-                            error={validation&&!text[fields[fieldIndex]]}
-                            />
-                        <TextField 
-                            size='small'
-                            label={fieldNames[++fieldIndex]}
-                            name={fields[fieldIndex]}
-                            value={text[fields[fieldIndex]]}
-                            onChange={handleChange}
-                            sx={{ width: totalWidth(2/6), m:margin }}
-                            required
-                            error={validation&&!text[fields[fieldIndex]]}
-                            />
-                    </Box>
-                    {/* address and full address */}
-                    <Box sx={{display:'flex', alignItems:'center'}}>
-                        <TextField 
-                            size='small'
-                            label={fieldNames[++fieldIndex]}
-                            name={fields[fieldIndex]}
-                            value={text[fields[fieldIndex]]}
-                            onChange={handleChange}
-                            sx={{ width: totalWidth(1/2), m:margin }}
-                            required
-                            error={validation&&!text[fields[fieldIndex]]}
-                            />
-                        <Box>
-                            <Typography sx={{ fontWeight:'bold' }}>Full Address:</Typography>
-                            <Typography>
-                                {text[fields[fieldIndex]]}
-                                {(text[fields[fieldIndex]])&&', '}
-                                {text[fields[fieldIndex+1]]}
-                                {(text[fields[fieldIndex+1]])&&', '}
-                                {text[fields[fieldIndex+2]]}
-                                {(text[fields[fieldIndex+2]])&&' '}
-                                {text[fields[fieldIndex+3]]}
-                            </Typography>
-                        </Box>
-                    </Box>
-                    {/* city state zip */}
-                    <Box sx={{display:'flex', alignItems:'center'}}>
-                        <TextField 
-                            size='small'
-                            label={fieldNames[++fieldIndex]}
-                            name={fields[fieldIndex]}
-                            value={text[fields[fieldIndex]]}
-                            onChange={handleChange}
                             sx={{ width: totalWidth(1/4), m:margin }}
-                            required
-                            error={validation&&!text[fields[fieldIndex]]}
+                            value={text[fields[fieldIndex]]}
+                            onChange={handleChange}
+                            required={required.includes(fields[fieldIndex])}
+                            error={required.includes(fields[fieldIndex])&&validation&&!text[fields[fieldIndex]]}
                             />
+                        <TextField 
+                            size='small'
+                            label={fieldNames[++fieldIndex]}
+                            name={fields[fieldIndex]}
+                            sx={{ width: totalWidth(1/4), m:margin }}
+                            value={text[fields[fieldIndex]]}
+                            onChange={handleChange}
+                            required={required.includes(fields[fieldIndex])}
+                            error={required.includes(fields[fieldIndex])&&validation&&!text[fields[fieldIndex]]}
+                            />
+                    </Box>
+                    {/* email and phone */}
+                    <Box sx={{display:'flex', alignItems:'center'}}>
+                        <TextField 
+                            size='small'
+                            type='email'
+                            label={fieldNames[++fieldIndex]}
+                            name={fields[fieldIndex]}
+                            value={text[fields[fieldIndex]]}
+                            onChange={handleChange}
+                            sx={{ width: totalWidth(1/3), m:margin }}
+                            required={required.includes(fields[fieldIndex])}
+                            error={required.includes(fields[fieldIndex])&&validation&&!text[fields[fieldIndex]]}
+                            />
+                        <TextField 
+                            size='small'
+                            type='tel'
+                            label={fieldNames[++fieldIndex]}
+                            name={fields[fieldIndex]}
+                            value={text[fields[fieldIndex]]}
+                            onChange={handleChange}
+                            sx={{ width: totalWidth(1/6), m:margin }}
+                            required={required.includes(fields[fieldIndex])}
+                            error={required.includes(fields[fieldIndex])&&validation&&!text[fields[fieldIndex]]}
+                            />
+                    </Box>
+                    {/* zip and service request */}
+                    <Box sx={{display:'flex', alignItems:'center'}}>
                         <TextField 
                             size='small'
                             label={fieldNames[++fieldIndex]}
                             name={fields[fieldIndex]}
                             value={text[fields[fieldIndex]]}
                             onChange={handleChange}
-                            sx={{ width: totalWidth(1/8), m:margin }}
-                            required
-                            error={validation&&!text[fields[fieldIndex]]}
+                            sx={{ width: totalWidth(1/6), m:margin }}
+                            required={required.includes(fields[fieldIndex])}
+                            error={required.includes(fields[fieldIndex])&&validation&&!text[fields[fieldIndex]]}
                             />
+                        <TextField 
+                            size='small'
+                            select
+                            label={fieldNames[++fieldIndex]}
+                            name={fields[fieldIndex]}
+                            value={text[fields[fieldIndex]]}
+                            onChange={handleChange}
+                            sx={{ width: totalWidth(1/3), m:margin }}
+                            required={required.includes(fields[fieldIndex])}
+                            error={required.includes(fields[fieldIndex])&&validation&&!text[fields[fieldIndex]]}
+                            >
+                            {['Extensive Repair', 'Leak Call', 'Preventative Maintenance', 'Repair Call', 'Reroof', 'Warranty Work'].map((option) => (
+                                <MenuItem key={option} value={option}>
+                                    {option}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                    </Box>
+                    {/* message */}
+                    <Box sx={{display:'flex', alignItems:'center'}}>
                         <TextField 
                             size='small'
                             label={fieldNames[++fieldIndex]}
                             name={fields[fieldIndex]}
                             value={text[fields[fieldIndex]]}
                             onChange={handleChange}
-                            sx={{ width: totalWidth(1/8), m:margin }}
-                            required
-                            error={validation&&!text[fields[fieldIndex]]}
+                            sx={{ width: totalWidth(1/2), m:margin }}
+                            multiline
+                            rows={4}
+                            required={required.includes(fields[fieldIndex])}
+                            error={required.includes(fields[fieldIndex])&&validation&&!text[fields[fieldIndex]]}
                             />
                     </Box>
                     {/* Submit button */}

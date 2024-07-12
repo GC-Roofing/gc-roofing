@@ -1,4 +1,4 @@
-import {useState, useEffect, useCallback} from 'react';
+import {useState, useEffect, useCallback, useMemo} from 'react';
 import { doc, collection, runTransaction, serverTimestamp, getDoc } from "firebase/firestore";
 import {useMapsLibrary} from '@vis.gl/react-google-maps';
 import { httpsCallable } from "firebase/functions";
@@ -7,6 +7,7 @@ import {firestore, functions} from '../../firebase';
 
 import TextField from '@mui/material/TextField';
 import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Autocomplete from '@mui/material/Autocomplete';
 import Button from '@mui/material/Button';
@@ -21,11 +22,10 @@ export default function BuildingForm({id, action}) {
     // initialize
     const collectionName = 'building';
     const title = 'Building';
-    const fields = ['name', 'property', 'transaction', 'unit', 'address', 'city', 'state', 'zip']; // fields
+    const fields = ['name', 'unit', 'address', 'city', 'state', 'zip', 'property']; // fields
     const types = [String, String, String, String, String, String, String, String]; // types
-    const addressList = fields.slice(3, 7);
-    const fieldNames = ['Building Name', 'Property', 'Transaction', 'Unit', 'Address', 'City', 'State', 'Zip Code'];
-    const relationships = [];
+    const addressList = fields.slice(2, 6);
+    const fieldNames = ['Building Name', 'Unit', 'Address', 'City', 'State', 'Zip Code', 'Property'];
     const required = [...fields.filter(v => !['unit'].includes(v))]; // required fields
 
     let fieldIndex = -1;
@@ -112,34 +112,42 @@ export default function BuildingForm({id, action}) {
                 lng: geoFuncs.lng(),
             }
         }
-        
-        // build list for relationships
-        let relationshipsObj = {};
-        if (relationships.length > 0) {
-            relationshipsObj = Object.assign(...relationships.map(k => ({ [k]: [] })));
-        }
 
         // try setting doc
         try {
-            // new change here for auto complete /////////////////////////
             await runTransaction(firestore, async (transaction) => {
                 // get reference doc
                 const objRefKeys = Object.keys(objRef).filter(v => objRef[v] !== null);
-                const objDocList = await Promise.all(objRefKeys.map(key => transaction.get(objRef[key])));
-
+                const objDocList = await Promise.all(objRefKeys.map(key => transaction.get(objRef[key].ref)));
                 // update the reference doc
                 objRefKeys.forEach((key) => {
-                    transaction.update(objRef[key], {
+                    transaction.update(objRef[key].ref, {
                         [collectionName+'s']: objDocList[objRefKeys.indexOf(key)].data()[collectionName+'s'].concat(docRef)
                     });
                 });
 
+                // create related objects (denormalize)
+                const fullObjRef = objRefKeys.reduce((acc, key) => {
+                    // add all of the data to the object
+                    Object.keys(objRef[key].data).forEach(dataKey => {
+                        if (dataKey.includes('_')) {
+                            acc[dataKey] = objRef[key].data[dataKey];
+                        } else {
+                            acc[key+'_'+dataKey] = objRef[key].data[dataKey];
+                        }
+                    })
+
+                    // remove this key from text
+                    delete text[key];
+
+                    return acc;
+                }, {});
+
                 // set the current form
                 transaction.set(docRef, {
                     createdAt: serverTimestamp(),
-                    ...relationshipsObj,
                     ...text,
-                    ...Object.fromEntries(Object.entries(objRef).filter(([_, v]) => v !== null)),
+                    ...fullObjRef,
                     fullAddress: fullAddress,
                     coordinates: coordinates,
                     lastEdited: serverTimestamp(),
@@ -217,6 +225,14 @@ export default function BuildingForm({id, action}) {
 
     // init
     // const autoCompleteFields = ['Client', 'Management', 'Property'];
+    const collectionFields = useMemo(() => ({
+        property: {
+            keys: ['name', 'fullAddress']
+                .concat(['name', 'type', 'billingName', 'billingEmail', 'contactName', 'contactEmail', 'fullAddress', 'address', 'city', 'state', 'zip', 'coordinates'].map(v=>'entity_'+v))
+                .concat(['coordinates', 'address', 'city', 'state', 'zip']),
+            labels: ['Property Name', 'Address', 'Entity Name', 'Entity Type', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Entity Address']
+        }
+    }), []);
 
 
     // state
@@ -228,31 +244,23 @@ export default function BuildingForm({id, action}) {
     // get info
     const getInfo = useCallback(async (textObj, current) => {
         ////////////////////////////////// This should be a param if it is ever generalized
-        const splitValue = 'client';
-        const splitValueValues = ['entity', 'tenant'];
 
 
         const text = textObj[current]?.label;
         if (!text) return;
 
-        // if a column can have multiple values
-        let multiple;
-        if (current === splitValue) {
-            multiple = splitValueValues;
-        }
-
         try {
             // get callable function and data
             setAutoLoading(true);
-            const filterData = httpsCallable(functions, 'filterData');
-            const result = await filterData({
-                collections:multiple || [current], 
+            const getData = httpsCallable(functions, 'getData');
+            const result = await getData({
+                collections:[current], 
                 pageNum:1, 
                 pageSize:25, 
                 orderBy:'name', 
                 orderDirection:'asc', 
                 filter:{name:text}, 
-                labels:[{key:'name'}],
+                select:collectionFields[current].keys,
             });
             const data = result.data; // result.data is because it is the data of the results
 
@@ -265,7 +273,7 @@ export default function BuildingForm({id, action}) {
         }
 
         setAutoLoading(false);
-    }, []);
+    }, [collectionFields]);
 
     // delay when to actually run the function
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -284,7 +292,10 @@ export default function BuildingForm({id, action}) {
                 const v = doc(firestore, value.key.split('-')[0], value.key);
                 setObjRef(t => ({
                     ...t,
-                    [current]: v
+                    [current]: {
+                        ...value,
+                        ref: v,
+                    }
                 }));
                 setText(t => ({
                     ...t,
@@ -316,6 +327,7 @@ export default function BuildingForm({id, action}) {
                 [name]: {
                     label:value,
                     key: null,
+                    data: null,
                 },
             }));
 
@@ -373,84 +385,6 @@ export default function BuildingForm({id, action}) {
                             <Typography>{formId}</Typography>
                         </Box>
                     </Box>
-                    {/* Property and id */}
-                    <Box sx={{display:'flex', alignItems:'center'}}>
-                        {/* this is a function so that field index is saved as a consistent reference for textfield */}
-                        {(() => {
-                            const currIndex = ++fieldIndex;
-                            return (
-                                <Autocomplete
-                                    disablePortal
-                                    autoHighlight
-                                    getOptionKey={v => v.key}
-                                    loading={autoLoading}
-                                    options={objList[fields[currIndex]].map(v => ({
-                                        label: v.data.name,
-                                        key: v.id,
-                                    }))}
-                                    sx={{ width: totalWidth(1/2), m:margin }}
-                                    size='small'
-                                    onOpen={handleOpen(fields[currIndex])}
-                                    onChange={handleSelect(fields[currIndex])}
-                                    onInputChange={handleInputChange(fields[currIndex])}
-                                    value={(text[fields[currIndex]]?.key) ? text[fields[currIndex]] : null}
-                                    isOptionEqualToValue={(option, value) => option.key === value.key}
-                                    renderInput={(params) => (
-                                        <TextField 
-                                            {...params}
-                                            label={fieldNames[currIndex]} 
-                                            name={fields[currIndex]}
-                                            error={validation&&!text[fields[currIndex]]}
-                                            />
-                                    )}
-                                    />
-                                );
-                            }
-                        )()}
-                        <Box>
-                            <Typography sx={{ fontWeight:'bold' }}>{fieldNames[fieldIndex]} ID:</Typography>
-                            <Typography>{objRef[fields[fieldIndex]]?.id}</Typography>
-                        </Box>
-                    </Box>
-                    {/* transaction and id */}
-                    <Box sx={{display:'flex', alignItems:'center'}}>
-                        {/* this is a function so that field index is saved as a consistent reference for textfield */}
-                        {(() => {
-                            const currIndex = ++fieldIndex;
-                            return (
-                                <Autocomplete
-                                    disablePortal
-                                    autoHighlight
-                                    getOptionKey={v => v.key}
-                                    loading={autoLoading}
-                                    options={objList[fields[currIndex]].map(v => ({
-                                        label: v.data.name,
-                                        key: v.id,
-                                    }))}
-                                    sx={{ width: totalWidth(1/2), m:margin }}
-                                    size='small'
-                                    onOpen={handleOpen(fields[currIndex])}
-                                    onChange={handleSelect(fields[currIndex])}
-                                    onInputChange={handleInputChange(fields[currIndex])}
-                                    value={(text[fields[currIndex]]?.key) ? text[fields[currIndex]] : null}
-                                    isOptionEqualToValue={(option, value) => option.key === value.key}
-                                    renderInput={(params) => (
-                                        <TextField 
-                                            {...params}
-                                            label={fieldNames[currIndex]} 
-                                            name={fields[currIndex]}
-                                            error={validation&&!text[fields[currIndex]]}
-                                            />
-                                    )}
-                                    />
-                                );
-                            }
-                        )()}
-                        <Box>
-                            <Typography sx={{ fontWeight:'bold' }}>{fieldNames[fieldIndex]} ID:</Typography>
-                            <Typography>{objRef[fields[fieldIndex]]?.id}</Typography>
-                        </Box>
-                    </Box>
                     {/* unit/address and full address */}
                     <Box sx={{display:'flex', alignItems:'center'}}>
                         <TextField 
@@ -473,7 +407,15 @@ export default function BuildingForm({id, action}) {
                             />
                         <Box>
                             <Typography sx={{ fontWeight:'bold' }}>Full Address:</Typography>
-                            <Typography>{text[fields[fieldIndex]]||'[address]'}, {text[fields[fieldIndex+1]]||'[city]'}, {text[fields[fieldIndex+2]]||'[state]'} {text[fields[fieldIndex+3]]||'[zip]'}</Typography>
+                            <Typography>
+                                {text[fields[fieldIndex]]}
+                                {(text[fields[fieldIndex]])&&', '}
+                                {text[fields[fieldIndex+1]]}
+                                {(text[fields[fieldIndex+1]])&&', '}
+                                {text[fields[fieldIndex+2]]}
+                                {(text[fields[fieldIndex+2]])&&' '}
+                                {text[fields[fieldIndex+3]]}
+                            </Typography>
                         </Box>
                     </Box>
                     {/* city state zip */}
@@ -508,6 +450,61 @@ export default function BuildingForm({id, action}) {
                             required
                             error={validation&&!text[fields[fieldIndex]]}
                             />
+                    </Box>
+                    {/* Property and id */}
+                    <Box sx={{display:'flex', alignItems:'center'}}>
+                        {/* this is a function so that field index is saved as a consistent reference for textfield */}
+                        {(() => {
+                            const currIndex = ++fieldIndex;
+                            return (
+                                <Autocomplete
+                                    disablePortal
+                                    autoHighlight
+                                    getOptionKey={v => v.key}
+                                    loading={autoLoading}
+                                    options={objList[fields[currIndex]].map(v => ({
+                                        label: v.data.name,
+                                        key: v.id,
+                                        data: v.data,
+                                    }))}
+                                    sx={{ width: totalWidth(1/2), m:margin }}
+                                    size='small'
+                                    onOpen={handleOpen(fields[currIndex])}
+                                    onChange={handleSelect(fields[currIndex])}
+                                    onInputChange={handleInputChange(fields[currIndex])}
+                                    value={(text[fields[currIndex]]?.key) ? text[fields[currIndex]] : null}
+                                    isOptionEqualToValue={(option, value) => option.key === value.key}
+                                    renderInput={(params) => (
+                                        <TextField 
+                                            {...params}
+                                            label={fieldNames[currIndex]} 
+                                            name={fields[currIndex]}
+                                            error={validation&&!text[fields[currIndex]]}
+                                            />
+                                    )}
+                                    />
+                                );
+                            }
+                        )()}
+                        <Box>
+                            <Typography sx={{ fontWeight:'bold' }}>{fieldNames[fieldIndex]} ID:</Typography>
+                            <Typography>{objRef[fields[fieldIndex]]?.key}</Typography>
+                        </Box>
+                    </Box>
+                    <Box sx={{display:'flex', alignItems:'center'}}>
+                        <Paper sx={{display:'flex', flexWrap:'wrap', width:totalWidth(1/2), m:margin, boxShadow:0, border:1, borderColor:'darkRed.main'}}>
+                            {collectionFields[fields[fieldIndex]]?.labels.map((v, i) => {
+                                const keys = collectionFields[fields[fieldIndex]].keys;
+                                return (
+                                    <Box key={i} sx={{ width: totalWidth(1/4), p:margin }}>
+                                        <Typography sx={{ fontWeight:'bold' }}>{v}:</Typography>
+                                        <Typography sx={{ minHeight:'1.2rem', lineHeight:'1.2rem' }}>{objRef[fields[fieldIndex]]?.data[keys[i]]}</Typography>
+                                    </Box>
+                                );
+                            })}
+                            {/* Entity name and type */}
+                            
+                        </Paper>
                     </Box>
                     {/* Submit button */}
                     <Box sx={{pt: '1%', display:'flex', alignItems:'center', justifyContent:'center', width:totalWidth(1/2)}}>

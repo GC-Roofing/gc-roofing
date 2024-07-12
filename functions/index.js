@@ -114,6 +114,93 @@ exports.deleteBuildingReferences = onDocumentDeleted("/building/{docId}", async 
     return { success:true };
 });
 
+exports.getData = onCall({ cors: ['https://gc-roofing.web.app', "http://localhost:3000"] }, async (req) => {
+    // console.log('/////////////////////////////')
+    // init
+    const firestore = getFirestore();
+    const query = req.data;
+
+    // params
+    const collectionNames = query.collections;
+    const select = query.select;
+    const orderBy = query.orderBy || select[0];
+    const orderDirection = query.orderDirection || 'asc';
+    const filter = query.filter;
+    const pageNum = query.pageNum || 1;
+    const pageSize = query.pageSize || 25;
+    const groupBy = query.groupBy || [];
+    const groupByOrder = query.groupByOrder || [];
+    const dataFunc = eval(query.dataFunc) || ((v) => v);
+
+    // check if the collection param is correct
+    if (!collectionNames) {
+        throw new HttpsError('invalid-argument', "Collection is required.");
+    } else if (!Array.isArray(collectionNames)) {
+        throw new HttpsError('invalid-argument', "Select should be a list of collections")
+    } else if (!select) {
+        throw new HttpsError('invalid-argument', "Select field names required.")
+    }
+
+
+    try {
+        // get collections
+        // console.log('derek ------> getting collections');
+        let returnCollections = await Promise.all(collectionNames.map(async c => {
+            let collectionRef = firestore.collection(c);
+            let query = collectionRef.select(...select);
+            let querySnapshot = await query.get();
+            return querySnapshot.docs.map(doc => ({id:doc.id, data: {...doc.data()}}));
+        }));
+
+
+        // union
+        const data = returnCollections.reduce((acc, v) => {
+            return acc.concat([...v]);
+        }, []);
+        // datafunc manipulate results
+        const dataFuncResults = dataFunc(data);
+
+        // filter if text has been inputted into filter
+        let filteredResults = dataFuncResults;
+        if (filter && Object.values(filter).some(x => x !== '')) {
+            filteredResults = data.filter((vf, i) => {// filter out the values that do not satisfy the filter
+                return select.every(field => {// checks if data matches the filter or not. (all have to be satisfied by the filter text)
+                    const converter = String; // string or converter
+                    const ft = filter[field]?.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                    const rt = converter(vf.data[field])?.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                    return rt?.includes(ft||'');
+                });
+            });
+        }
+
+        // sort the results
+        let sortOrder = [...groupByOrder];
+        let sortBy = [...groupBy];
+        sortOrder.push(orderDirection); // include orderdirection
+        sortBy.push(orderBy); // include orderby
+        let sortedResults = filteredResults.sort(getComparator(sortOrder, sortBy)); // sort
+
+        // get the total length
+        const filteredLength = sortedResults.length;
+
+        // limit results
+        const begin = (pageNum-1) * pageSize;
+        const end = pageNum*pageSize;
+        const slicedResults = sortedResults.slice(begin, end);// limit the results per page
+
+        // group results if groupby exists
+        const groupedResults = nestedGroupBy(slicedResults, groupBy);    
+        // return results
+        // console.log('derek Function completed successfully');
+        return {data: groupedResults, length:filteredLength, grouped: groupBy.length!==0};
+        // res.status(200).send({data: returnResults, length:filteredLength});
+    } catch (error) {
+        console.error('derek Error fetching data:', error);
+        throw new HttpsError('internal', 'Internal Server Error');
+    }
+
+});
+
 exports.filterData = onCall({ cors: ['https://gc-roofing.web.app', "http://localhost:3000"] }, async (req) => {
     // console.log('/////////////////////////////')
     // init

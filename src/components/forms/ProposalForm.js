@@ -1,4 +1,4 @@
-import {useState, useEffect, useCallback} from 'react';
+import {useState, useEffect, useCallback, useMemo} from 'react';
 import { doc, collection, runTransaction, serverTimestamp, getDoc } from "firebase/firestore";
 // import {useMapsLibrary} from '@vis.gl/react-google-maps';
 import { httpsCallable } from "firebase/functions";
@@ -10,6 +10,10 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Autocomplete from '@mui/material/Autocomplete';
 import Button from '@mui/material/Button';
+import Paper from '@mui/material/Paper';
+import Checkbox from '@mui/material/Checkbox';
+
+
 
 
 
@@ -17,22 +21,21 @@ import Button from '@mui/material/Button';
 // if copy and no autocomplete, then remove transaction and uncomment setdoc. remove custom before return. remove autocomplete from return
 
 
-export default function TransactionForm({id, action}) {
+export default function ProposalForm({id, action}) {
     // initialize
-    const collectionName = 'transaction';
-    const title = 'Transaction';
-    const fields = ['name', 'client', 'management', 'property']; // fields
-    const types = [String, String, String, String]; // types
+    const collectionName = 'proposal';
+    const title = 'Proposal';
+    const fields = ['name', 'isTenant', 'tenant', 'hasManagement', 'management', 'property', 'extraInfo']; // fields
+    const types = [String, Boolean, String, Boolean, String, String, String]; // types
     // const addressList = fields.slice(3, 7);
-    const fieldNames = ['Transaction Name', 'Client', 'Management', 'Property'];
-    const relationships = ['workOrders', 'buildings'];
-    const required = [...fields.filter(v => !['management'].includes(v))]; // required fields
+    const fieldNames = ['Proposal Name', 'Tenant?', 'Tenant', 'Management?', 'Management', 'Property', 'Notes'];
+    const required = [...fields.filter(v => !['management', 'tenant'].includes(v))]; // required fields
 
     let fieldIndex = -1;
     const typeFuncs = Object.assign(...fields.map((k, i) => ({ [k]: types[i] }))); // type functions
 
     // state
-    const [text, setText] = useState(Object.assign(...fields.map(k => ({ [k]: '' })))); // text field stuff
+    const [text, setText] = useState(Object.assign(...fields.map(k => ({ [k]: typeFuncs[k]('') })))); // text field stuff
     const [validation, setValidation] = useState(false); // is submitted validation?
     const [loading, setLoading] = useState(false); // loading after submit
     const [message, setMessage] = useState(''); // message to user
@@ -69,7 +72,12 @@ export default function TransactionForm({id, action}) {
     // handlers
     // handles text change
     function handleChange({target}) {
-        const value = typeFuncs[target.name](target.value);
+        let value;
+        if (target.type === 'checkbox') {
+            value = typeFuncs[target.name](target.checked);
+        } else {
+            value = typeFuncs[target.name](target.value);
+        }
 
         setText(t => ({
             ...t,
@@ -112,39 +120,44 @@ export default function TransactionForm({id, action}) {
         //         lng: geoFuncs.lng(),
         //     }
         // }
-        
-        // build list for relationships
-        let relationshipsObj = {};
-        if (relationships.length > 0) {
-            relationshipsObj = Object.assign(...relationships.map(k => ({ [k]: [] })));
-        }
 
         // try setting doc
         try {
             await runTransaction(firestore, async (transaction) => {
                 // get reference doc
                 const objRefKeys = Object.keys(objRef).filter(v => objRef[v] !== null);
-                const objDocList = await Promise.all(objRefKeys.map(key => transaction.get(objRef[key])));
-
+                const objDocList = await Promise.all(objRefKeys.map(key => transaction.get(objRef[key].ref)));
                 // update the reference doc
                 objRefKeys.forEach((key) => {
-                    transaction.update(objRef[key], {
+                    transaction.update(objRef[key].ref, {
                         [collectionName+'s']: objDocList[objRefKeys.indexOf(key)].data()[collectionName+'s'].concat(docRef)
                     });
                 });
 
+                // create related objects (denormalize)
+                const fullObjRef = objRefKeys.reduce((acc, key) => {
+                    // add all of the data to the object
+                    Object.keys(objRef[key].data).forEach(dataKey => {
+                        if (dataKey.includes('_')) {
+                            acc[dataKey] = objRef[key].data[dataKey];
+                        } else {
+                            acc[key+'_'+dataKey] = objRef[key].data[dataKey];
+                        }
+                    })
+
+                    // remove this key from text
+                    delete text[key];
+
+                    return acc;
+                }, {});
+
                 // set the current form
                 transaction.set(docRef, {
                     createdAt: serverTimestamp(),
-                    ...relationshipsObj,
                     ...text,
-                    ...Object.fromEntries(Object.entries(objRef).filter(([_, v]) => v !== null)),
-                    // [collectionName + 'FullAddress']: fullAddress,
-                    // [collectionName + 'Coordinates']: coordinates,
+                    ...fullObjRef,
                     lastEdited: serverTimestamp(),
                 }, {merge:true});
-
-                
             });
             // await setDoc(docRef, {
             //     [collectionName + 'CreatedAt']: serverTimestamp(),
@@ -217,7 +230,24 @@ export default function TransactionForm({id, action}) {
 
     // init
     // const autoCompleteFields = ['Client', 'Management', 'Property'];
-    
+    const collectionFields = useMemo(() => ({
+        property: {
+            keys: ['name', 'fullAddress']
+                .concat(['name', 'type', 'billingName', 'billingEmail', 'contactName', 'contactEmail', 'fullAddress', 'address', 'city', 'state', 'zip', 'coordinates'].map(v=>'entity_'+v))
+                .concat(['coordinates', 'address', 'city', 'state', 'zip']),
+            labels: ['Property Name', 'Address', 'Entity Name', 'Entity Type', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Entity Address']
+        },
+        tenant: {
+            keys: ['name', 'type', 'billingName', 'billingEmail', 'contactName', 'contactEmail', 'fullAddress']
+                .concat([ 'coordinates', 'unit', 'address', 'city', 'state', 'zip']),
+            labels: ['Tenant Name', 'Tenant Type', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Tenant Address']
+        },
+        management: {
+            keys: ['name', 'billingName', 'billingEmail', 'contactName', 'contactEmail', 'fullAddress']
+                .concat(['coordinates', 'address', 'city', 'state', 'zip']),
+            labels: ['Management Name', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Management Address']
+        }
+    }), []);
 
     // state
     const [objRef, setObjRef] = useState(Object.assign(...fields.map(k => ({ [k]: null }))));
@@ -228,31 +258,23 @@ export default function TransactionForm({id, action}) {
     // get info
     const getInfo = useCallback(async (textObj, current) => {
         ////////////////////////////////// This should be a param if it is ever generalized
-        const splitValue = 'client';
-        const splitValueValues = ['entity', 'tenant'];
 
 
         const text = textObj[current]?.label;
         if (!text) return;
 
-        // if a column can have multiple values
-        let multiple;
-        if (current === splitValue) {
-            multiple = splitValueValues;
-        }
-
         try {
             // get callable function and data
             setAutoLoading(true);
-            const filterData = httpsCallable(functions, 'filterData');
-            const result = await filterData({
-                collections:multiple || [current], 
+            const getData = httpsCallable(functions, 'getData');
+            const result = await getData({
+                collections:[current], 
                 pageNum:1, 
                 pageSize:25, 
                 orderBy:'name', 
                 orderDirection:'asc', 
                 filter:{name:text}, 
-                labels:[{key:'name'}],
+                select:collectionFields[current].keys,
             });
             const data = result.data; // result.data is because it is the data of the results
 
@@ -265,8 +287,8 @@ export default function TransactionForm({id, action}) {
         }
 
         setAutoLoading(false);
-    }, []);
-    
+    }, [collectionFields]);
+
     // delay when to actually run the function
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const debouncedInfo = useCallback(debounce(getInfo, 500), [getInfo])
@@ -276,6 +298,7 @@ export default function TransactionForm({id, action}) {
         debouncedInfo(text, current);
     }, [debouncedInfo, text, current]);
 
+
     // when selected
     function handleSelect(name) {
         return (event, value, reason) => {
@@ -283,7 +306,10 @@ export default function TransactionForm({id, action}) {
                 const v = doc(firestore, value.key.split('-')[0], value.key);
                 setObjRef(t => ({
                     ...t,
-                    [current]: v
+                    [current]: {
+                        ...value,
+                        ref: v,
+                    }
                 }));
                 setText(t => ({
                     ...t,
@@ -292,7 +318,7 @@ export default function TransactionForm({id, action}) {
             } else {
                 setObjRef(t => ({
                     ...t,
-                    [current]:null
+                    [current]: null
                 }));
             }
 
@@ -315,6 +341,7 @@ export default function TransactionForm({id, action}) {
                 [name]: {
                     label:value,
                     key: null,
+                    data: null,
                 },
             }));
 
@@ -331,7 +358,7 @@ export default function TransactionForm({id, action}) {
             // }
         }
     }
-    
+
     // for debounce
     function debounce(func, delay) {
         let timeoutId;
@@ -372,7 +399,139 @@ export default function TransactionForm({id, action}) {
                             <Typography>{formId}</Typography>
                         </Box>
                     </Box>
-                    {/* Client and id */}
+                    {/* tenant and id */}
+                    <Box sx={{display:'flex', alignItems:'center'}}>
+                        {/* this is a function so that field index is saved as a consistent reference for textfield */}
+                        <Box sx={{ width: totalWidth(1/16), m:margin}}>
+                            <Checkbox 
+                                size='small'
+                                label={fieldNames[++fieldIndex]}
+                                name={fields[fieldIndex]}
+                                required
+                                value={text[fields[fieldIndex]]}
+                                onChange={handleChange}
+                                error={validation&&!text[fields[fieldIndex]]}
+                                />
+                        </Box>
+                        {(() => {
+                            const currIndex = ++fieldIndex;
+                            return (
+                                <Autocomplete
+                                    disabled={!text[fields[currIndex-1]]}
+                                    disablePortal
+                                    autoHighlight
+                                    getOptionKey={v => v.key}
+                                    loading={autoLoading}
+                                    options={objList[fields[currIndex]].map(v => ({
+                                        label: v.data.name,
+                                        key: v.id,
+                                        data: v.data,
+                                    }))}
+                                    sx={{ width: totalWidth(7/16), m:margin }}
+                                    size='small'
+                                    onOpen={handleOpen(fields[currIndex])}
+                                    onChange={handleSelect(fields[currIndex])}
+                                    onInputChange={handleInputChange(fields[currIndex])}
+                                    value={(text[fields[currIndex]]?.key) ? text[fields[currIndex]] : null}
+                                    isOptionEqualToValue={(option, value) => option.key === value.key}
+                                    renderInput={(params) => (
+                                        <TextField 
+                                            {...params}
+                                            label={fieldNames[currIndex]} 
+                                            name={fields[currIndex]}
+                                            />
+                                    )}
+                                    />
+                                );
+                            }
+                        )()}
+                        <Box>
+                            <Typography sx={{ fontWeight:'bold' }}>{fieldNames[fieldIndex]} ID:</Typography>
+                            <Typography>{objRef[fields[fieldIndex]]?.key}</Typography>
+                        </Box>
+                    </Box>
+                    <Box sx={{display:(text[fields[fieldIndex-1]]) ? 'flex' : 'none', alignItems:'center'}}>
+                        <Paper sx={{display:'flex', flexWrap:'wrap', width:totalWidth(1/2), m:margin, boxShadow:0, border:1, borderColor:'darkRed.main'}}>
+                            {collectionFields[fields[fieldIndex]]?.labels.map((v, i) => {
+                                const keys = collectionFields[fields[fieldIndex]].keys;
+                                return (
+                                    <Box key={i} sx={{ width: totalWidth(1/4), p:margin }}>
+                                        <Typography sx={{ fontWeight:'bold' }}>{v}:</Typography>
+                                        <Typography sx={{ minHeight:'1.2rem', lineHeight:'1.2rem' }}>{objRef[fields[fieldIndex]]?.data[keys[i]]}</Typography>
+                                    </Box>
+                                );
+                            })}
+                            {/* Entity name and type */}
+                            
+                        </Paper>
+                    </Box>
+                    {/* management and id */}
+                    <Box sx={{display:'flex', alignItems:'center'}}>
+                        {/* this is a function so that field index is saved as a consistent reference for textfield */}
+                        <Box sx={{ width: totalWidth(1/16), m:margin}}>
+                            <Checkbox 
+                                size='small'
+                                label={fieldNames[++fieldIndex]}
+                                name={fields[fieldIndex]}
+                                required
+                                value={text[fields[fieldIndex]]}
+                                onChange={handleChange}
+                                error={validation&&!text[fields[fieldIndex]]}
+                                />
+                        </Box>
+                        {(() => {
+                            const currIndex = ++fieldIndex;
+                            return (
+                                <Autocomplete
+                                    disabled={!text[fields[currIndex-1]]}
+                                    disablePortal
+                                    autoHighlight
+                                    getOptionKey={v => v.key}
+                                    loading={autoLoading}
+                                    options={objList[fields[currIndex]].map(v => ({
+                                        label: v.data.name,
+                                        key: v.id,
+                                        data: v.data,
+                                    }))}
+                                    sx={{ width: totalWidth(7/16), m:margin }}
+                                    size='small'
+                                    onOpen={handleOpen(fields[currIndex])}
+                                    onChange={handleSelect(fields[currIndex])}
+                                    onInputChange={handleInputChange(fields[currIndex])}
+                                    value={(text[fields[currIndex]]?.key) ? text[fields[currIndex]] : null}
+                                    isOptionEqualToValue={(option, value) => option.key === value.key}
+                                    renderInput={(params) => (
+                                        <TextField 
+                                            {...params}
+                                            label={fieldNames[currIndex]} 
+                                            name={fields[currIndex]}
+                                            />
+                                    )}
+                                    />
+                                );
+                            }
+                        )()}
+                        <Box>
+                            <Typography sx={{ fontWeight:'bold' }}>{fieldNames[fieldIndex]} ID:</Typography>
+                            <Typography>{objRef[fields[fieldIndex]]?.key}</Typography>
+                        </Box>
+                    </Box>
+                    <Box sx={{display:(text[fields[fieldIndex-1]]) ? 'flex' : 'none', alignItems:'center'}}>
+                        <Paper sx={{display:'flex', flexWrap:'wrap', width:totalWidth(1/2), m:margin, boxShadow:0, border:1, borderColor:'darkRed.main'}}>
+                            {collectionFields[fields[fieldIndex]]?.labels.map((v, i) => {
+                                const keys = collectionFields[fields[fieldIndex]].keys;
+                                return (
+                                    <Box key={i} sx={{ width: totalWidth(1/4), p:margin }}>
+                                        <Typography sx={{ fontWeight:'bold' }}>{v}:</Typography>
+                                        <Typography sx={{ minHeight:'1.2rem', lineHeight:'1.2rem' }}>{objRef[fields[fieldIndex]]?.data[keys[i]]}</Typography>
+                                    </Box>
+                                );
+                            })}
+                            {/* Entity name and type */}
+                            
+                        </Paper>
+                    </Box>
+                    {/* property and entity and id */}
                     <Box sx={{display:'flex', alignItems:'center'}}>
                         {/* this is a function so that field index is saved as a consistent reference for textfield */}
                         {(() => {
@@ -386,6 +545,7 @@ export default function TransactionForm({id, action}) {
                                     options={objList[fields[currIndex]].map(v => ({
                                         label: v.data.name,
                                         key: v.id,
+                                        data: v.data,
                                     }))}
                                     sx={{ width: totalWidth(1/2), m:margin }}
                                     size='small'
@@ -408,85 +568,38 @@ export default function TransactionForm({id, action}) {
                         )()}
                         <Box>
                             <Typography sx={{ fontWeight:'bold' }}>{fieldNames[fieldIndex]} ID:</Typography>
-                            <Typography>{objRef[fields[fieldIndex]]?.id}</Typography>
+                            <Typography>{objRef[fields[fieldIndex]]?.key}</Typography>
                         </Box>
                     </Box>
-                    {/* Management and id */}
                     <Box sx={{display:'flex', alignItems:'center'}}>
-                        {/* this is a function so that field index is saved as a consistent reference for textfield */}
-                        {(() => {
-                            const currIndex = ++fieldIndex;
-                            return (
-                                <Autocomplete
-                                    disablePortal
-                                    autoHighlight
-                                    getOptionKey={v => v.key}
-                                    loading={autoLoading}
-                                    options={objList[fields[currIndex]].map(v => ({
-                                        label: v.data.name,
-                                        key: v.id,
-                                    }))}
-                                    sx={{ width: totalWidth(1/2), m:margin }}
-                                    size='small'
-                                    onOpen={handleOpen(fields[currIndex])}
-                                    onChange={handleSelect(fields[currIndex])}
-                                    onInputChange={handleInputChange(fields[currIndex])}
-                                    value={(text[fields[currIndex]]?.key) ? text[fields[currIndex]] : null}
-                                    isOptionEqualToValue={(option, value) => option.key === value.key}
-                                    renderInput={(params) => (
-                                        <TextField 
-                                            {...params}
-                                            label={fieldNames[currIndex]} 
-                                            name={fields[currIndex]}
-                                            />
-                                    )}
-                                    />
+                        <Paper sx={{display:'flex', flexWrap:'wrap', width:totalWidth(1/2), m:margin, boxShadow:0, border:1, borderColor:'darkRed.main'}}>
+                            {collectionFields[fields[fieldIndex]]?.labels.map((v, i) => {
+                                const keys = collectionFields[fields[fieldIndex]].keys;
+                                return (
+                                    <Box key={i} sx={{ width: totalWidth(1/4), p:margin }}>
+                                        <Typography sx={{ fontWeight:'bold' }}>{v}:</Typography>
+                                        <Typography sx={{ minHeight:'1.2rem', lineHeight:'1.2rem' }}>{objRef[fields[fieldIndex]]?.data[keys[i]]}</Typography>
+                                    </Box>
                                 );
-                            }
-                        )()}
-                        <Box>
-                            <Typography sx={{ fontWeight:'bold' }}>{fieldNames[fieldIndex]} ID:</Typography>
-                            <Typography>{objRef[fields[fieldIndex]]?.id}</Typography>
-                        </Box>
+                            })}
+                            {/* Entity name and type */}
+                            
+                        </Paper>
                     </Box>
-                    {/* Property and id */}
+                    {/* Extra info */}
                     <Box sx={{display:'flex', alignItems:'center'}}>
-                        {/* this is a function so that field index is saved as a consistent reference for textfield */}
-                        {(() => {
-                            const currIndex = ++fieldIndex;
-                            return (
-                                <Autocomplete
-                                    disablePortal
-                                    autoHighlight
-                                    getOptionKey={v => v.key}
-                                    loading={autoLoading}
-                                    options={objList[fields[currIndex]].map(v => ({
-                                        label: v.data.name,
-                                        key: v.id,
-                                    }))}
-                                    sx={{ width: totalWidth(1/2), m:margin }}
-                                    size='small'
-                                    onOpen={handleOpen(fields[currIndex])}
-                                    onChange={handleSelect(fields[currIndex])}
-                                    onInputChange={handleInputChange(fields[currIndex])}
-                                    value={(text[fields[currIndex]]?.key) ? text[fields[currIndex]] : null}
-                                    isOptionEqualToValue={(option, value) => option.key === value.key}
-                                    renderInput={(params) => (
-                                        <TextField 
-                                            {...params}
-                                            label={fieldNames[currIndex]} 
-                                            name={fields[currIndex]}
-                                            error={validation&&!text[fields[currIndex]]}
-                                            />
-                                    )}
-                                    />
-                                );
-                            }
-                        )()}
-                        <Box>
-                            <Typography sx={{ fontWeight:'bold' }}>{fieldNames[fieldIndex]} ID:</Typography>
-                            <Typography>{objRef[fields[fieldIndex]]?.id}</Typography>
-                        </Box>
+                        <TextField 
+                            size='small'
+                            multiline
+                            rows={4}
+                            label={fieldNames[++fieldIndex]}
+                            name={fields[fieldIndex]}
+                            sx={{ width: totalWidth(1/2), m:margin }}
+                            required
+                            value={text[fields[fieldIndex]]}
+                            onChange={handleChange}
+                            error={validation&&!text[fields[fieldIndex]]}
+                            />
                     </Box>
                     {/* Submit button */}
                     <Box sx={{pt: '1%', display:'flex', alignItems:'center', justifyContent:'center', width:totalWidth(1/2)}}>

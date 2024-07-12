@@ -78,6 +78,14 @@ export function useTabs() {
 
 const formLabels = [
     {
+        label:'Service Request',
+        to:'service-request'
+    },
+    {
+        label:'Entity',
+        to:'entity'
+    },
+    {
         label:'Property',
         to:'property'
     },
@@ -86,20 +94,16 @@ const formLabels = [
         to:'building'
     },
     {
-        label:'Tenant',
-        to:'tenant',
-    },
-    {
-        label:'Entity',
-        to:'entity'
-    },
-    {
         label:'Management',
         to:'management'
     },
     {
-        label:'Transaction',
-        to:'transaction'
+        label:'Tenant',
+        to:'tenant',
+    },
+    {
+        label:'Proposal',
+        to:'proposal'
     }
 ]
 

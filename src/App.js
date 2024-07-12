@@ -42,8 +42,8 @@ import PropertyForm from './components/forms/PropertyForm';
 import EntityForm from './components/forms/EntityForm';
 import TenantForm from './components/forms/TenantForm';
 import ManagementForm from './components/forms/ManagementForm';
-import TransactionForm from './components/forms/TransactionForm';
-
+import ProposalForm from './components/forms/ProposalForm';
+import ServiceRequestForm from './components/forms/ServiceRequestForm';
 
 
 
@@ -328,6 +328,10 @@ function App() {
                                     element:<div />
                                 },
                                 {
+                                    path:'service-request',
+                                    element:<ServiceRequestForm />
+                                },
+                                {
                                     path:'property',
                                     element:<PropertyForm />
                                 },
@@ -348,8 +352,8 @@ function App() {
                                     element:<ManagementForm />
                                 },
                                 {
-                                    path:'transaction',
-                                    element:<TransactionForm />
+                                    path:'proposal',
+                                    element:<ProposalForm />
                                 }
                             ]
                         },

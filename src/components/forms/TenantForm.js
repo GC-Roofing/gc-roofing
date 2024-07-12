@@ -10,6 +10,8 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 // import Autocomplete from '@mui/material/Autocomplete';
 import Button from '@mui/material/Button';
+import MenuItem from '@mui/material/MenuItem';
+
 
 
 
@@ -23,9 +25,9 @@ export default function TenantForm({id, action}) {
     const title = 'Tenant';
     const fields = ['name', 'type', 'billingName', 'billingEmail', 'contactName', 'contactEmail', 'unit', 'address', 'city', 'state', 'zip']; // fields
     const types = [String, String, String, String, String, String, String, String, String, String, String]; // types
-    const addressList = fields.slice(5, 9);
+    const addressList = fields.slice(7, 11);
     const fieldNames = ['Tenant Name', 'Tenant Type', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Unit', 'Address', 'City', 'State', 'Zip Code'];
-    const relationships = ['transactions'];
+    const relationships = ['proposals'];
     const required = [...fields.filter(v => !['unit'].includes(v))]; // required fields
 
     let fieldIndex = -1;
@@ -113,7 +115,7 @@ export default function TenantForm({id, action}) {
                 lng: geoFuncs.lng(),
             }
         }
-        
+
         // build list for relationships
         let relationshipsObj = {};
         if (relationships.length > 0) {
@@ -214,6 +216,7 @@ export default function TenantForm({id, action}) {
                     {/* type */}
                     <Box sx={{display:'flex', alignItems:'center'}}>
                         <TextField 
+                            select
                             size='small'
                             label={fieldNames[++fieldIndex]}
                             name={fields[fieldIndex]}
@@ -222,7 +225,13 @@ export default function TenantForm({id, action}) {
                             sx={{ width: totalWidth(1/2), m:margin }}
                             required
                             error={validation&&!text[fields[fieldIndex]]}
-                            />
+                            >
+                            {['Business', 'Government', 'Industrial', 'Mixed', 'Non-Profit', 'Office', 'Residential', 'Retail', 'RVer'].map((option) => (
+                                <MenuItem key={option} value={option}>
+                                    {option}
+                                </MenuItem>
+                            ))}
+                        </TextField>
                     </Box>
                     {/* billing name and email */}
                     <Box sx={{display:'flex', alignItems:'center'}}>
@@ -292,7 +301,15 @@ export default function TenantForm({id, action}) {
                             />
                         <Box>
                             <Typography sx={{ fontWeight:'bold' }}>Full Address:</Typography>
-                            <Typography>{text[fields[fieldIndex]]||'[address]'}, {text[fields[fieldIndex+1]]||'[city]'}, {text[fields[fieldIndex+2]]||'[state]'} {text[fields[fieldIndex+3]]||'[zip]'}</Typography>
+                            <Typography>
+                                {text[fields[fieldIndex]]}
+                                {(text[fields[fieldIndex]])&&', '}
+                                {text[fields[fieldIndex+1]]}
+                                {(text[fields[fieldIndex+1]])&&', '}
+                                {text[fields[fieldIndex+2]]}
+                                {(text[fields[fieldIndex+2]])&&' '}
+                                {text[fields[fieldIndex+3]]}
+                            </Typography>
                         </Box>
                     </Box>
                     {/* city state zip */}
