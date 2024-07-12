@@ -1,4 +1,4 @@
-import {useState, useEffect, useCallback, useMemo} from 'react';
+import {useState, useEffect, useCallback} from 'react';
 import { doc, collection, serverTimestamp, getDoc, runTransaction } from "firebase/firestore";
 import {useMapsLibrary} from '@vis.gl/react-google-maps';
 import { httpsCallable } from "firebase/functions";
@@ -18,18 +18,25 @@ import Button from '@mui/material/Button';
 // if copy and no autocomplete, then remove transaction and uncomment setdoc. remove custom before return. remove autocomplete from return
 
 
-
+const collectionName = 'property';
+const title = 'Property';
+const fields = ['name', 'address', 'city', 'state', 'zip', 'entity']; // fields
+const types = [String, String, String, String, String, String]; // types
+const addressList = fields.slice(1, 5);
+const fieldNames = ['Property Name', 'Address', 'City', 'State', 'Zip Code', 'Entity'];
+const relationships = ['buildings', 'proposals'];
+const required = [...fields]; // required fields
+const collectionFields = {
+    entity: {
+        keys: ['name', 'type', 'billingName', 'billingEmail', 'contactName', 'contactEmail', 'fullAddress', 'address']
+            .concat(['city', 'state', 'zip', 'coordinates']),
+        labels: ['Entity Name', 'Entity Type', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Address']
+    }
+}
 
 export default function PropertyForm({id, action}) {
     // initialize
-    const collectionName = 'property';
-    const title = 'Property';
-    const fields = ['name', 'address', 'city', 'state', 'zip', 'entity']; // fields
-    const types = [String, String, String, String, String, String]; // types
-    const addressList = fields.slice(1, 5);
-    const fieldNames = ['Property Name', 'Address', 'City', 'State', 'Zip Code', 'Entity'];
-    const relationships = ['buildings', 'proposals'];
-    const required = [...fields]; // required fields
+
 
     let fieldIndex = -1;
     const typeFuncs = Object.assign(...fields.map((k, i) => ({ [k]: types[i] }))); // type functions
@@ -59,24 +66,22 @@ export default function PropertyForm({id, action}) {
                 const docRef = doc(firestore, collectionName, id);
                 const docSnapshot = await getDoc(docRef);
                 const data = docSnapshot.data();
-
-                setObjRef(Object.assign(...fields.map(k => {
+                const initialObjRef = Object.assign(...fields.map(k => { /////////////
                     if (id&&collectionFields[k]) {
+                        const relations = collectionFields[k].relations;
                         const d = Object.keys(data).reduce((acc, key) => {
-                            if (key.includes(k)) {
-                                const [col, field] = key.split('_');
+                            const includeRelations = relations?.some(v => key.includes(v));
+                            if (key.includes(k)||includeRelations) {
+                                const field = includeRelations ? key : key.split('_')[1];
                                 acc[field] = data[key]
                                 return acc;
                             }
                             return acc;
                         }, {});
 
-                        text[k] = {
-                            label: d.name,
-                            key: d.id,
-                            data: d,
-                            ref: doc(firestore, k, d.id),
-                        };
+                        if (Object.keys(d).length === 0) { 
+                            return { [k]: null }; 
+                        }
 
                         return {[k]: {
                             label: d.name,
@@ -86,11 +91,18 @@ export default function PropertyForm({id, action}) {
                         }};
                     }
                     return { [k]: null };
-                })));
+                }));
 
-                setText(t => ({
-                    ...t,
-                    ...text,
+                Object.keys(data).forEach(v => { 
+                    if (v.includes('_')) {
+                        delete data[v];
+                    }
+                })
+
+                setObjRef(initialObjRef); 
+
+                setText(t => ({ 
+                    ...initialObjRef,
                     ...data,
                 }));
             }
@@ -270,13 +282,7 @@ export default function PropertyForm({id, action}) {
 
     // init
     // const autoCompleteFields = ['Client', 'Management', 'Property'];
-    const collectionFields = useMemo(() => ({
-        entity: {
-            keys: ['name', 'type', 'billingName', 'billingEmail', 'contactName', 'contactEmail', 'fullAddress', 'address']
-                .concat(['city', 'state', 'zip', 'coordinates']),
-            labels: ['Entity Name', 'Entity Type', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Address']
-        }
-    }), [])
+    
 
 
     // state
@@ -317,7 +323,7 @@ export default function PropertyForm({id, action}) {
         }
 
         setAutoLoading(false);
-    }, [collectionFields]);
+    }, []);
 
     // delay when to actually run the function
     // eslint-disable-next-line react-hooks/exhaustive-deps

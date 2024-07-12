@@ -1,4 +1,4 @@
-import {useState, useEffect, useCallback, useMemo} from 'react';
+import {useState, useEffect, useCallback} from 'react';
 import { doc, collection, runTransaction, serverTimestamp, getDoc } from "firebase/firestore";
 import {useMapsLibrary} from '@vis.gl/react-google-maps';
 import { httpsCallable } from "firebase/functions";
@@ -16,17 +16,26 @@ import Button from '@mui/material/Button';
 
 
 // if copy and no autocomplete, then remove transaction and uncomment setdoc. remove custom before return. remove autocomplete from return
-
+const collectionName = 'building';
+const title = 'Building';
+const fields = ['name', 'unit', 'address', 'city', 'state', 'zip', 'property']; // fields
+const types = [String, String, String, String, String, String, String, String]; // types
+const addressList = fields.slice(2, 6);
+const fieldNames = ['Building Name', 'Unit', 'Address', 'City', 'State', 'Zip Code', 'Property'];
+const required = [...fields.filter(v => !['unit'].includes(v))]; // required fields
+const collectionFields = {
+    property: {
+        keys: ['name', 'fullAddress']
+            .concat(['name', 'type', 'billingName', 'billingEmail', 'contactName', 'contactEmail', 'fullAddress', 'address', 'city', 'state', 'zip', 'coordinates', 'id'].map(v=>'entity_'+v))
+            .concat(['coordinates', 'address', 'city', 'state', 'zip']),
+        labels: ['Property Name', 'Address', 'Entity Name', 'Entity Type', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Entity Address'],
+        relations: ['entity']
+    }
+}
 
 export default function BuildingForm({id, action}) {
     // initialize
-    const collectionName = 'building';
-    const title = 'Building';
-    const fields = ['name', 'unit', 'address', 'city', 'state', 'zip', 'property']; // fields
-    const types = [String, String, String, String, String, String, String, String]; // types
-    const addressList = fields.slice(2, 6);
-    const fieldNames = ['Building Name', 'Unit', 'Address', 'City', 'State', 'Zip Code', 'Property'];
-    const required = [...fields.filter(v => !['unit'].includes(v))]; // required fields
+    
 
     let fieldIndex = -1;
     const typeFuncs = Object.assign(...fields.map((k, i) => ({ [k]: types[i] }))); // type functions
@@ -62,7 +71,7 @@ export default function BuildingForm({id, action}) {
                         const d = Object.keys(data).reduce((acc, key) => {
                             const includeRelations = relations?.some(v => key.includes(v));
                             if (key.includes(k)||includeRelations) {
-                                const [_, field] = includeRelations ? [0, key] : key.split('_');
+                                const field = includeRelations ? key : key.split('_')[1];
                                 acc[field] = data[key]
                                 return acc;
                             }
@@ -266,15 +275,7 @@ export default function BuildingForm({id, action}) {
 
     // init
     // const autoCompleteFields = ['Client', 'Management', 'Property'];
-    const collectionFields = useMemo(() => ({
-        property: {
-            keys: ['name', 'fullAddress']
-                .concat(['name', 'type', 'billingName', 'billingEmail', 'contactName', 'contactEmail', 'fullAddress', 'address', 'city', 'state', 'zip', 'coordinates', 'id'].map(v=>'entity_'+v))
-                .concat(['coordinates', 'address', 'city', 'state', 'zip']),
-            labels: ['Property Name', 'Address', 'Entity Name', 'Entity Type', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Entity Address'],
-            relations: ['entity']
-        }
-    }), []);
+    
 
 
     // state
@@ -315,7 +316,7 @@ export default function BuildingForm({id, action}) {
         }
 
         setAutoLoading(false);
-    }, [collectionFields]);
+    }, []);
 
     // delay when to actually run the function
     // eslint-disable-next-line react-hooks/exhaustive-deps
