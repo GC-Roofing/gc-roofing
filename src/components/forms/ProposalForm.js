@@ -235,7 +235,7 @@ export default function ProposalForm({id, action}) {
     const collectionFields = useMemo(() => ({
         property: {
             keys: ['name', 'fullAddress']
-                .concat(['name', 'type', 'billingName', 'billingEmail', 'contactName', 'contactEmail', 'fullAddress', 'address', 'city', 'state', 'zip', 'coordinates'].map(v=>'entity_'+v))
+                .concat(['name', 'type', 'billingName', 'billingEmail', 'contactName', 'contactEmail', 'fullAddress', 'address', 'city', 'state', 'zip', 'coordinates', 'id'].map(v=>'entity_'+v))
                 .concat(['coordinates', 'address', 'city', 'state', 'zip']),
             labels: ['Property Name', 'Address', 'Entity Name', 'Entity Type', 'Billing Name', 'Billing Email', 'Contact Name', 'Contact Email', 'Entity Address']
         },

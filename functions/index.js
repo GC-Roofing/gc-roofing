@@ -28,19 +28,19 @@ exports.deleteProposalReferences = onDocumentDeleted("/proposal/{docId}", async 
     // get database
     const db = getFirestore()
     // get assessment collection
-    const client = db.collection(data.client.id.split('-')[0]);
+    const tenant = db.collection('tenant');
     const management = db.collection('management');
     const property = db.collection('property');
     // querysnapshot
-    let clientSnapshot = client.where('proposals', 'array-contains', dataRef).get();
+    let tenantSnapshot = tenant.where('proposals', 'array-contains', dataRef).get();
     let managementSnapshot = management.where('proposals', 'array-contains', dataRef).get();
     let propertySnapshot = property.where('proposals', 'array-contains', dataRef).get();
 
-    [clientSnapshot, managementSnapshot, propertySnapshot] = await Promise.all([clientSnapshot, managementSnapshot, propertySnapshot]);
+    [tenantSnapshot, managementSnapshot, propertySnapshot] = await Promise.all([tenantSnapshot, managementSnapshot, propertySnapshot]);
     // get new reference list
     const batch = db.batch();
 
-    clientSnapshot.forEach((doc) => {
+    tenantSnapshot.forEach((doc) => {
         const updatedReferenceList = doc.data().proposals.filter(ref => ref.id !== dataRef.id);
         batch.update(doc.ref, {proposals: updatedReferenceList});
     });
