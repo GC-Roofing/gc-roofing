@@ -6,8 +6,7 @@ const { HttpsError} = require("firebase-functions/v2/https");
 
 exports.handleProposalReferences = async (event) => {
     // get data
-    const dataRef = event.data.ref;
-    const data = event.data.data();
+    const dataRef = event.data.before.ref;
     // get database
     const db = getFirestore()
     // get assessment collection
@@ -45,7 +44,7 @@ exports.handleProposalReferences = async (event) => {
 
 exports.handlePropertyReferences = async (event) => {
     // get data
-    const dataRef = event.data.ref;
+    const dataRef = event.data.before.ref;
     // get database
     const db = getFirestore()
     // get assessment collection
@@ -67,8 +66,7 @@ exports.handlePropertyReferences = async (event) => {
 
 exports.handleBuildingReferences = async (event) => {
     // get data
-    const dataRef = event.data.ref;
-    const data = event.data.data();
+    const dataRef = event.data.before.ref;
     // get database
     const db = getFirestore()
     // get assessment collection
