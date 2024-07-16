@@ -35,8 +35,6 @@ const collectionFields = {
 
 export default function BuildingForm({id, action}) {
     // initialize
-    
-
     let fieldIndex = -1;
     const typeFuncs = Object.assign(...fields.map((k, i) => ({ [k]: types[i] }))); // type functions
 

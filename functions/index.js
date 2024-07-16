@@ -8,12 +8,12 @@
  */
 
 const {onCall, HttpsError} = require("firebase-functions/v2/https");
-const {onDocumentWritten} = require("firebase-functions/v2/firestore");
-
-// const logger = require("firebase-functions/logger");
+const {onDocumentDeleted, onDocumentUpdate} = require("firebase-functions/v2/firestore");
 
 const {initializeApp} = require("firebase-admin/app");
 const {getFirestore} = require("firebase-admin/firestore");
+
+const deleteModule = require('./functionCalls/deleteModule');
 
 
 initializeApp();
@@ -21,104 +21,11 @@ initializeApp();
 // Create and deploy your first functions
 // https://firebase.google.com/docs/functions/get-started
 
-exports.writeProposal = onDocumentWritten("/proposal/{docId}", async (event) => {
-    if (!event.data.after.exists) {
-        // get data
-        const dataRef = event.data.ref;
-        const data = event.data.data();
-        // get database
-        const db = getFirestore()
-        // get assessment collection
-        const tenant = db.collection('tenant');
-        const management = db.collection('management');
-        const property = db.collection('property');
-        // querysnapshot
-        let tenantSnapshot = tenant.where('proposals', 'array-contains', dataRef).get();
-        let managementSnapshot = management.where('proposals', 'array-contains', dataRef).get();
-        let propertySnapshot = property.where('proposals', 'array-contains', dataRef).get();
+exports.deleteProposalReferences = onDocumentDeleted("/proposal/{docId}", deleteModule.handleProposalReferences);
 
-        [tenantSnapshot, managementSnapshot, propertySnapshot] = await Promise.all([tenantSnapshot, managementSnapshot, propertySnapshot]);
-        // get new reference list
-        const batch = db.batch();
+exports.deletePropertyReferences = onDocumentDeleted("/property/{docId}", deleteModule.handlePropertyReferences);
 
-        tenantSnapshot.forEach((doc) => {
-            const updatedReferenceList = doc.data().proposals.filter(ref => ref.id !== dataRef.id);
-            batch.update(doc.ref, {proposals: updatedReferenceList});
-        });
-
-        managementSnapshot.forEach((doc) => {
-            const updatedReferenceList = doc.data().proposals.filter(ref => ref.id !== dataRef.id);
-            batch.update(doc.ref, {proposals: updatedReferenceList});
-        });
-
-        propertySnapshot.forEach((doc) => {
-            const updatedReferenceList = doc.data().proposals.filter(ref => ref.id !== dataRef.id);
-            batch.update(doc.ref, {proposals: updatedReferenceList});
-        });
-
-        await batch.commit();
-
-        return { success:true };
-    }
-});
-
-exports.writeProperty = onDocumentWritten("/property/{docId}", async (event) => {
-    if (!event.data.after.exists) {
-        // get data
-        const dataRef = event.data.ref;
-        // get database
-        const db = getFirestore()
-        // get assessment collection
-        const entity = db.collection('entity');
-        // querysnapshot
-        const querySnapshot = await entity.where('propertys', 'array-contains', dataRef).get();
-
-        // get new reference list
-        const batch = db.batch();
-        querySnapshot.forEach((doc) => {
-            const updatedReferenceList = doc.data().propertys.filter(ref => ref.id !== dataRef.id);
-            batch.update(doc.ref, {propertys: updatedReferenceList});
-        });
-
-        await batch.commit();
-
-        return { success:true };
-    }
-});
-
-exports.writeBuilding = onDocumentWritten("/building/{docId}", async (event) => {
-    if (!event.data.after.exists) {
-        // get data
-        const dataRef = event.data.ref;
-        const data = event.data.data();
-        // get database
-        const db = getFirestore()
-        // get assessment collection
-        const transaction = db.collection('transaction');
-        const property = db.collection('property');
-        // querysnapshot
-        let transactionSnapshot = transaction.where('buildings', 'array-contains', dataRef).get();
-        let propertySnapshot = property.where('buildings', 'array-contains', dataRef).get();
-
-        [transactionSnapshot, propertySnapshot] = await Promise.all([transactionSnapshot, propertySnapshot]);
-        // get new reference list
-        const batch = db.batch();
-
-        transactionSnapshot.forEach((doc) => {
-            const updatedReferenceList = doc.data().buildings.filter(ref => ref.id !== dataRef.id);
-            batch.update(doc.ref, {buildings: updatedReferenceList});
-        });
-
-        propertySnapshot.forEach((doc) => {
-            const updatedReferenceList = doc.data().buildings.filter(ref => ref.id !== dataRef.id);
-            batch.update(doc.ref, {buildings: updatedReferenceList});
-        });
-
-        await batch.commit();
-
-        return { success:true };
-    }
-});
+exports.deleteBuildingReferences = onDocumentDeleted("/building/{docId}", deleteModule.handleBuildingReferences);
 
 exports.getData = onCall({ cors: ['https://gc-roofing.web.app', "http://localhost:3000"] }, async (req) => {
     // console.log('/////////////////////////////')
