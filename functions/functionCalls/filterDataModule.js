@@ -5,7 +5,7 @@ const {getFirestore} = require("firebase-admin/firestore");
 const { HttpsError} = require("firebase-functions/v2/https");
 
 
-export.filterData = async (req) => {
+exports.filterData = async (req) => {
     // console.log('/////////////////////////////')
     // init
     const firestore = getFirestore();
