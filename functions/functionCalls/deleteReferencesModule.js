@@ -1,8 +1,11 @@
 
 const {getFirestore} = require("firebase-admin/firestore");
 const { HttpsError} = require("firebase-functions/v2/https");
+const FieldValue = require("firebase-admin").FieldValue;
 
 
+//////////////////// YOU SHOULD RUN THE READ AND WRITES AS A TRANSACTION SO THAT ATOMICITY IS KEPT
+//////////////////// edit the last edited too.
 
 exports.handleProposalReferences = async (event) => {
     // get data
@@ -13,12 +16,14 @@ exports.handleProposalReferences = async (event) => {
     const tenant = db.collection('tenant');
     const management = db.collection('management');
     const property = db.collection('property');
+    const entity = db.collection('entity');
     // querysnapshot
     let tenantSnapshot = tenant.where('proposals', 'array-contains', dataRef).get();
     let managementSnapshot = management.where('proposals', 'array-contains', dataRef).get();
     let propertySnapshot = property.where('proposals', 'array-contains', dataRef).get();
+    let entitySnapshot = entity.where('proposals', 'array-contains', dataRef).get();
 
-    [tenantSnapshot, managementSnapshot, propertySnapshot] = await Promise.all([tenantSnapshot, managementSnapshot, propertySnapshot]);
+    [tenantSnapshot, managementSnapshot, propertySnapshot, entitySnapshot] = await Promise.all([tenantSnapshot, managementSnapshot, propertySnapshot, entitySnapshot]);
     // get new reference list
     const batch = db.batch();
 
@@ -33,6 +38,11 @@ exports.handleProposalReferences = async (event) => {
     });
 
     propertySnapshot.forEach((doc) => {
+        const updatedReferenceList = doc.data().proposals.filter(ref => ref.id !== dataRef.id);
+        batch.update(doc.ref, {proposals: updatedReferenceList});
+    });
+
+    entitySnapshot.forEach((doc) => {
         const updatedReferenceList = doc.data().proposals.filter(ref => ref.id !== dataRef.id);
         batch.update(doc.ref, {proposals: updatedReferenceList});
     });
@@ -70,17 +80,17 @@ exports.handleBuildingReferences = async (event) => {
     // get database
     const db = getFirestore()
     // get assessment collection
-    const transaction = db.collection('transaction');
     const property = db.collection('property');
+    const entity = db.collection('entity');
     // querysnapshot
-    let transactionSnapshot = transaction.where('buildings', 'array-contains', dataRef).get();
     let propertySnapshot = property.where('buildings', 'array-contains', dataRef).get();
+    let entitySnapshot = entity.where('buildings', 'array-contains', dataRef).get();
 
-    [transactionSnapshot, propertySnapshot] = await Promise.all([transactionSnapshot, propertySnapshot]);
+    [propertySnapshot, entitySnapshot] = await Promise.all([propertySnapshot, entitySnapshot]);
     // get new reference list
     const batch = db.batch();
 
-    transactionSnapshot.forEach((doc) => {
+    entitySnapshot.forEach((doc) => {
         const updatedReferenceList = doc.data().buildings.filter(ref => ref.id !== dataRef.id);
         batch.update(doc.ref, {buildings: updatedReferenceList});
     });

@@ -104,7 +104,7 @@ const formLabels = [
     {
         label:'Proposal',
         to:'proposal'
-    }
+    },
 ]
 
 

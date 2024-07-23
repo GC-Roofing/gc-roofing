@@ -354,7 +354,7 @@ function App() {
                                 {
                                     path:'proposal',
                                     element:<ProposalForm />
-                                }
+                                },
                             ]
                         },
                         {
