@@ -115,7 +115,7 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                     const oldData = relationObjs[i].data();
                     transaction.update(ref, {
                         ...data,
-                        // add an editing of the full address too.
+                        /////////////////////////////////////////////////////// this is the line
                         [collectionName+'s']: (oldData[collectionName+'s']||[]).concat([docRef]),
                         lastEdited: serverTimestamp(),
                         'metadata.fromFunction': false,
@@ -173,6 +173,7 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                     transverseObj[key].value = '';
 
                     if (transverseObj[key].relation) { // copy the related rendering and then push it.
+                        transverseObj[key].options = [];
                         transverseObj[key].relatedRendering = {...transverseObj[key].relatedRendering};
                         queue.push(transverseObj[key].relatedRendering);
                     }

@@ -394,7 +394,7 @@ const inputRenderList = [
             const {label, value, required} = obj.unit;
             return (
                 <TextField 
-                    {...textField(['Unit'])} 
+                    {...textField(['unit'])} 
                     sx={{...sizing(1/6)}} 
                     label={label}
                     value={value}

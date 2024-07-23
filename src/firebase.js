@@ -1,11 +1,11 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import { 
-    getFunctions, 
-    // connectFunctionsEmulator 
-} from 'firebase/functions';
+import { getFunctions } from 'firebase/functions';
 
+// comment out when pushing to production
+// import { connectFunctionsEmulator } from 'firebase/functions';
+// import { connectFirestoreEmulator } from "firebase/firestore";
 
 
 // Your web app's Firebase configuration
@@ -29,5 +29,6 @@ export const firestore = getFirestore(firebase);
 export const auth = getAuth(firebase);
 export const functions = getFunctions(firebase);
 
-
+// comment out when pushing to production
 // connectFunctionsEmulator(functions, "127.0.0.1", 5001);
+// connectFirestoreEmulator(firestore, "127.0.0.1", 8080);
