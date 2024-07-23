@@ -118,15 +118,20 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                         // add an editing of the full address too.
                         [collectionName+'s']: (oldData[collectionName+'s']||[]).concat([docRef]),
                         lastEdited: serverTimestamp(),
+                        'metadata.fromFunction': false,
                     });
                 });
+
+                // set from function or else create metadata if not exist
+                const metadata = (Boolean(id))
+                    ? {'metadata.fromFunction': false}
+                    : {metadata: {fromFunction: false}};
 
                 // set the current form
                 transaction.set(docRef, {
                     createdAt: serverTimestamp(),
                     ...retObj,
-                    // fullAddress: fullAddress,
-                    // coordinates: coordinates,
+                    ...metadata,
                     lastEdited: serverTimestamp(),
                 }, {merge: Boolean(id)}); // if id is provided, it should be an update
             });

@@ -186,18 +186,10 @@ const inputRenderList = [
 
 
 export default function ServiceRequestForm({id}) {
-    const formId = useMemo(() => {
-        if (id) return id; // change this so that it updates all the input obj when an id is provided
-
-        const collectionRef = collection(firestore, collectionName);
-        const docRef = doc(collectionRef);
-        inputObj.id.value = `${collectionName}-` + docRef.id;
-        return inputObj.id.value;
-    }, []);
 
     return (
         <Forms 
-            id={formId}
+            id={id}
             collectionName={collectionName}
             title='Service Request'
             initialObj={inputObj}
