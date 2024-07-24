@@ -253,7 +253,6 @@ const inputObj = {
 const inputRenderList = [
     [ // row title
         ({textField, obj, sizing}) => {
-            const {label, value, required} = obj.name;
             return (
                 <Typography sx={{ fontWeight:'bold', ...sizing(1/2)}}>Property</Typography>
                 );
@@ -341,7 +340,6 @@ const inputRenderList = [
     ],
     [ // row title
         ({textField, obj, sizing}) => {
-            const {label, value, required} = obj.name;
             return (
                 <Typography sx={{ fontWeight:'bold', ...sizing(1/2)}}>Entity</Typography>
                 );

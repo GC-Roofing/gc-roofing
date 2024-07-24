@@ -1,15 +1,11 @@
-import {useState, useEffect, useCallback, useMemo} from 'react';
-import { doc, collection, runTransaction, serverTimestamp, getDoc } from "firebase/firestore";
-import {useMapsLibrary} from '@vis.gl/react-google-maps';
+import {useState, useCallback, useMemo} from 'react';
+import { doc, collection, runTransaction, serverTimestamp } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 
 import {firestore, functions} from '../../firebase';
 
-import TextField from '@mui/material/TextField';
 import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
-import Autocomplete from '@mui/material/Autocomplete';
 import Button from '@mui/material/Button';
 
 

@@ -1,8 +1,3 @@
-import {useMemo} from 'react';
-import { doc, collection } from "firebase/firestore";
-
-import {firestore} from '../../firebase';
-
 import Forms from './Forms';
 
 import TextField from '@mui/material/TextField';
