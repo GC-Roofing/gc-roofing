@@ -5,7 +5,6 @@ import {firestore} from '../../firebase';
 import Forms from './Forms';
 
 import TextField from '@mui/material/TextField';
-import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import MenuItem from '@mui/material/MenuItem';
@@ -151,7 +150,6 @@ const inputObj = {
 const inputRenderList = [
     [ // row title
         ({textField, obj, sizing}) => {
-            const {label, value, required} = obj.name;
             return (
                 <Typography sx={{ fontWeight:'bold', ...sizing(1/2)}}>Entity</Typography>
                 );

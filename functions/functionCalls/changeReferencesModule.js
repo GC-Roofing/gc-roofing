@@ -83,7 +83,7 @@ exports.handlePropertyReferences = async (event) => {
             if (afterDataList.every(ref => ref.id !== afterData.ref.id)) {
                 const addedReferenceList = afterDataList.concat([afterData.ref]);
                 transaction.update(group[1].ref, { // update
-                    property: addedReferenceList,
+                    propertys: addedReferenceList,
                     'metadata.fromFunction': true,
                     lastEdited: FieldValue.serverTimestamp(),
                 });

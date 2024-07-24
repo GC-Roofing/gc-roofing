@@ -1,4 +1,4 @@
-import {useState, useCallback, useMemo} from 'react';
+import {useState, useCallback} from 'react';
 import { doc, collection, runTransaction, serverTimestamp } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 
@@ -20,17 +20,20 @@ export default function Forms({id, collectionName, title, initialObj, renderList
     const [loading, setLoading] = useState(false); // loading after submit
     const [message, setMessage] = useState(''); // message to user
     const [autoLoading, setAutoLoading] = useState(false);
-    const [clearId, setClearId] = useState(false);
-    const formId = useMemo(() => {
+    const [formId, setFormId] = useState(() => {
         if (id) return id; // change this so that it updates all the input obj when an id is provided
         // also make sure you save the referenced related docs so that you can remove the relationship
         // if a different doc is selected
 
         const collectionRef = collection(firestore, collectionName);
         const docRef = doc(collectionRef);
-        obj.id.value = `${collectionName}-` + docRef.id;
-        return obj.id.value;
-    }, [clearId]);
+        const retId = `${collectionName}-` + docRef.id;
+        setObj(o => {
+            o.id.value = retId;
+            return o;
+        })
+        return retId;
+    });
 
     // handlers
     // handles text change
@@ -82,6 +85,7 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                 let relationQueue = [];
 
                 // populate retObj
+                let storeRelationQueue = true; // this is for collecting the relationQueue but not including any nested objects
                 while (queue.length > 0) {
                     let [transverseRetObj, transverseObj] = queue.shift(); // get the nested obj and nested rendering
 
@@ -94,10 +98,11 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                         } else if (transverseObj[key].value) { // else create a new [nested obj, nested rendering] and push to queue
                             let newObj = {}
                             transverseRetObj[key] = newObj;
-                            relationQueue.push({name:key, data:newObj}); // store relation obj for later updating
+                            storeRelationQueue && relationQueue.push({name:key, data:newObj}); // store relation obj for later updating if not nested
                             queue.push([newObj, transverseObj[key].relatedRendering]);
                         }
                     }
+                    storeRelationQueue = false; // this sets to false because all other objects are nested
                 }
 
                 // Update the related docs
@@ -156,9 +161,14 @@ export default function Forms({id, collectionName, title, initialObj, renderList
 
     // clear form
     function clear() {
-        setClearId(t=>!t);
-        // clear obj values
         setObj(o => {
+            // clear id
+            const collectionRef = collection(firestore, collectionName);
+            const docRef = doc(collectionRef);
+            const retId = `${collectionName}-` + docRef.id;
+            setFormId(retId);
+
+            // clear obj values
             let retObj = {...o}; // return obj
             let queue = [retObj]; // bfs queue
             while (queue.length > 0) {
@@ -176,11 +186,15 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                 }
             }
 
+            retObj.id.value = retId;
+
             return retObj;
         });
+
     }
 
     // get info
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const getInfo = useCallback(debounce(500, async (obj, fieldList, relatedObj, current, text) => {
         try {
             setAutoLoading(true);
@@ -269,7 +283,7 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                         [transverseObj, transverseData] = queue.shift(); // deconstruct and get values
 
                         // update all the fields of transverse object
-                        Object.keys(transverseObj).forEach(v => { 
+                        for (let v of Object.keys(transverseObj)) {
                             transverseObj[v] = {...transverseObj[v]}; // copy
                             if (!transverseObj[v].relation) { // if not relation, update value
                                 transverseObj[v].value = transverseData[v]
@@ -277,7 +291,7 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                                 transverseObj[v].relatedRendering = {...transverseObj[v].relatedRendering}; // copy
                                 queue.push([transverseObj[v].relatedRendering, transverseData[v]]);
                             }
-                        });
+                        }
                     }
 
                     return retObj;
@@ -301,7 +315,7 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                         transverseObj = queue.shift(); // deconstruct and get values
 
                         // update all the fields of transverse object
-                        Object.keys(transverseObj).forEach(v => { 
+                        for (let v of Object.keys(transverseObj)) {
                             transverseObj[v] = {...transverseObj[v]}; // copy
                             if (!transverseObj[v].relation) { // if not relation, update value
                                 transverseObj[v].value = '';
@@ -309,7 +323,7 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                                 transverseObj[v].relatedRendering = {...transverseObj[v].relatedRendering}; // copy
                                 queue.push(transverseObj[v].relatedRendering);
                             }
-                        });
+                        }
                     }
 
                     return retObj;
