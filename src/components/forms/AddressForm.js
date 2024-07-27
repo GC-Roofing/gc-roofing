@@ -3,19 +3,19 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import {firestore} from '../../firebase';
 
 import Forms from './Forms';
-import {inputObj as entityInputObj, inputRenderList as entityRenderList} from './EntityForm'; //////////////////////
+import {inputObj as buildingInputObj, inputRenderList as buildingRenderList} from './BuildingForm';
 
 import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 
-const collectionName = 'property';
+const collectionName = 'address';
 
-export const inputObj = () => ({ ///////////////////////////
+const inputObj = {
     id: {
         field: 'id',
-        label: 'Property ID',
+        label: 'Address ID',
         value: '',
         typeFunc: String,
         relation: false,
@@ -23,11 +23,19 @@ export const inputObj = () => ({ ///////////////////////////
     },
     name: {
         field: 'name',
-        label: 'Property Name',
+        label: 'Address Name',
         value: '',
         typeFunc: String,
         relation: false,
         required: true,
+    },
+    unit: {
+        field: 'unit',
+        label: 'Unit',
+        value: '',
+        typeFunc: String,
+        relation: false,
+        required: false,
     },
     address: {
         field: 'address',
@@ -105,46 +113,35 @@ export const inputObj = () => ({ ///////////////////////////
         relation: false,
         required: true,
     },
-    entity: {
-        field: 'entity',
-        label: 'Entity',
+    building: {
+        field: 'building',
+        label: 'Building',
         value: '',
         typeFunc: String,
         relation: true,
         required: true,
         options: [],
         relatedRendering: {
-            ...entityInputObj(), /////////////////////////////////
+            ...buildingInputObj(),
         }
     },
-});
+};
 
-export const inputRenderList = (fieldList) => [ ///////////////////////////////
+export const inputRenderList = (fieldList) => [
     [ // row 1
         ({textField, obj, sizing}) => {
             const {label, value, required} = getNestedObj(obj, fieldList).name;
             return (
                 <>
                     <TextField 
-                        {...textField(fieldList.concat(['name']))} 
-                        sx={{
-                            ...sizing(1/2),
-                            display: (!Boolean(getNestedObj(obj, fieldList).id.value))
-                                ? 'none'
-                                : 'flex'
-                        }}
+                        {...textField(['name'])} 
+                        sx={{...sizing(1/2)}} 
                         label={label}
                         value={value}
                         required={required}
                         />
-                    <Box
-                        sx={{
-                            display: (!Boolean(getNestedObj(obj, fieldList).id.value))
-                                ? 'none'
-                                : 'block'
-                        }}
-                        >
-                        <Typography sx={{ fontWeight:'bold' }}>Property ID:</Typography>
+                    <Box>
+                        <Typography sx={{ fontWeight:'bold' }}>Address ID:</Typography>
                         <Typography>{getNestedObj(obj, fieldList).id.value}</Typography>
                     </Box>
                 </>
@@ -153,28 +150,29 @@ export const inputRenderList = (fieldList) => [ ///////////////////////////////
     ],
     [ // row 2
         ({textField, obj, sizing}) => {
+            const {label, value, required} = getNestedObj(obj, fieldList).unit;
+            return (
+                <TextField 
+                    {...textField(['unit'])} 
+                    sx={{...sizing(1/6)}} 
+                    label={label}
+                    value={value}
+                    required={required}
+                    />
+                );
+        },
+        ({textField, obj, sizing}) => {
             const {label, value, required} = getNestedObj(obj, fieldList).address;
             return (
                 <>
                     <TextField 
-                        {...textField(fieldList.concat(['address']))} 
-                        sx={{
-                            ...sizing(1/2),
-                            display: (!Boolean(getNestedObj(obj, fieldList).id.value))
-                                ? 'none'
-                                : 'flex'
-                        }}
+                        {...textField(['address'])} 
+                        sx={{...sizing(1/3)}} 
                         label={label}
                         value={value}
                         required={required}
                         />
-                    <Box
-                        sx={{
-                            display: (!Boolean(getNestedObj(obj, fieldList).id.value))
-                                ? 'none'
-                                : 'block'
-                        }}
-                        >
+                    <Box>
                         <Typography sx={{ fontWeight:'bold' }}>Full Address:</Typography>
                         <Typography>
                             {getNestedObj(obj, fieldList).fullAddress.formula(getNestedObj(obj, fieldList))}
@@ -189,13 +187,8 @@ export const inputRenderList = (fieldList) => [ ///////////////////////////////
             const {label, value, required} = getNestedObj(obj, fieldList).city;
             return (
                 <TextField 
-                    {...textField(fieldList.concat(['city']))} 
-                    sx={{
-                        ...sizing(1/4),
-                        display: (!Boolean(getNestedObj(obj, fieldList).id.value))
-                            ? 'none'
-                            : 'flex'
-                    }}
+                    {...textField(['city'])} 
+                    sx={{...sizing(1/4)}} 
                     label={label}
                     value={value}
                     required={required}
@@ -206,13 +199,8 @@ export const inputRenderList = (fieldList) => [ ///////////////////////////////
             const {label, value, required} = getNestedObj(obj, fieldList).state;
             return (
                 <TextField 
-                    {...textField(fieldList.concat(['state']))} 
-                    sx={{
-                        ...sizing(1/8),
-                        display: (!Boolean(getNestedObj(obj, fieldList).id.value))
-                            ? 'none'
-                            : 'flex'
-                    }}
+                    {...textField(['state'])} 
+                    sx={{...sizing(1/8)}} 
                     label={label}
                     value={value}
                     required={required}
@@ -223,13 +211,8 @@ export const inputRenderList = (fieldList) => [ ///////////////////////////////
             const {label, value, required} = getNestedObj(obj, fieldList).zip;
             return (
                 <TextField 
-                    {...textField(fieldList.concat(['zip']))} 
-                    sx={{
-                        ...sizing(1/8),
-                        display: (!Boolean(getNestedObj(obj, fieldList).id.value))
-                            ? 'none'
-                            : 'flex'
-                    }}
+                    {...textField(['zip'])} 
+                    sx={{...sizing(1/8)}} 
                     label={label}
                     value={value}
                     required={required}
@@ -240,33 +223,18 @@ export const inputRenderList = (fieldList) => [ ///////////////////////////////
     [ // row title
         ({textField, obj, sizing}) => {
             return (
-                <Typography 
-                    sx={{ 
-                        fontWeight:'bold', 
-                        ...sizing(1/2),
-                        display: (!Boolean(getNestedObj(obj, fieldList).id.value))
-                            ? 'none'
-                            : 'flex'
-                    }}
-                    >
-                    Entity
-                </Typography>
+                <Typography sx={{ fontWeight:'bold', ...sizing(1/2)}}>Building</Typography>
                 );
         },
     ],
     [ // row 4
         ({autoComplete, obj, sizing}) => {
-            const {label, value, required, options} = getNestedObj(obj, fieldList).entity;
-            const id = getNestedObj(obj, fieldList).entity.relatedRendering.id;
+            const {label, value, required, options} = getNestedObj(obj, fieldList).building;
+            const id = getNestedObj(obj, fieldList).building.relatedRendering.id;
             return (
                 <Autocomplete 
-                    {...autoComplete(fieldList.concat(['entity']), 'name')} 
-                    sx={{
-                        ...sizing(1/2),
-                        display: (!Boolean(getNestedObj(obj, fieldList).id.value))
-                            ? 'none'
-                            : 'flex'
-                    }}
+                    {...autoComplete(fieldList.concat(['building']), 'name')} 
+                    sx={{...sizing(1/2)}}
                     options={options}
                     value={{
                         id: id.value || options[0]?.data.id, // either an existing value or first option
@@ -283,19 +251,17 @@ export const inputRenderList = (fieldList) => [ ///////////////////////////////
                 );
         },
     ],
-    ...entityRenderList(fieldList.concat(['entity'])),
+    ...buildingRenderList(fieldList.concat(['building'])),
 ];
 
 
-export default function PropertyForm({id}) {
-    
-
+export default function AddressForm({id}) {
     return (
         <Forms 
             id={id}
             collectionName={collectionName}
-            title='Property'
-            initialObj={inputObj()}
+            title='Address'
+            initialObj={inputObj}
             renderList={inputRenderList([])}
             />
     );
@@ -329,7 +295,6 @@ async function geocode(address) {
     return gs;
 };
 
-
 // get nested attribute
 
 function getNestedObj(obj, fieldList) {
@@ -340,5 +305,6 @@ function getNestedObj(obj, fieldList) {
 
     return transverseObj;
 }
+
 
 

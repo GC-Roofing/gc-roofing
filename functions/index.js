@@ -26,11 +26,13 @@ initializeApp();
 exports.changeProposalReferences = onDocumentUpdated("/proposal/{docId}", changeReferencesModule.handleProposalReferences);
 exports.changePropertyReferences = onDocumentUpdated("/property/{docId}", changeReferencesModule.handlePropertyReferences);
 exports.changeBuildingReferences = onDocumentUpdated("/building/{docId}", changeReferencesModule.handleBuildingReferences);
+exports.changeAddressReferences = onDocumentUpdated("/address/{docId}", changeReferencesModule.handleAddressReferences);
 
 exports.updateEntityReferences = onDocumentUpdated("/entity/{docId}", updateReferencesModule.handleEntityReferences);
 exports.updateManagementReferences = onDocumentUpdated("/management/{docId}", updateReferencesModule.handleManagementReferences);
 exports.updateTenantReferences = onDocumentUpdated("/tenant/{docId}", updateReferencesModule.handleTenantReferences);
 exports.updatePropertyReferences = onDocumentUpdated("/property/{docId}", updateReferencesModule.handlePropertyReferences);
+exports.updateBuildingReferences = onDocumentUpdated("/building/{docId}", updateReferencesModule.handleBuildingReferences);
 
 exports.deleteProposalReferences = onDocumentDeleted("/proposal/{docId}", deleteReferencesModule.handleProposalReferences);
 exports.deletePropertyReferences = onDocumentDeleted("/property/{docId}", deleteReferencesModule.handlePropertyReferences);

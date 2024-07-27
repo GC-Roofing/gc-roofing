@@ -44,6 +44,7 @@ import TenantForm from './components/forms/TenantForm';
 import ManagementForm from './components/forms/ManagementForm';
 import ProposalForm from './components/forms/ProposalForm';
 import ServiceRequestForm from './components/forms/ServiceRequestForm';
+import AddressForm from './components/forms/AddressForm';
 
 
 
@@ -338,6 +339,10 @@ function App() {
                                 {
                                     path:'building',
                                     element:<BuildingForm />
+                                },
+                                {
+                                    path:'address',
+                                    element:<AddressForm />
                                 },
                                 {
                                     path:'entity',

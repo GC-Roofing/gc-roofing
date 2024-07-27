@@ -94,6 +94,10 @@ const formLabels = [
         to:'building'
     },
     {
+        label:'Address',
+        to:'address'
+    },
+    {
         label:'Management',
         to:'management'
     },

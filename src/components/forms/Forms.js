@@ -29,9 +29,11 @@ export default function Forms({id, collectionName, title, initialObj, renderList
         const docRef = doc(collectionRef);
         const retId = `${collectionName}-` + docRef.id;
         setObj(o => {
-            o.id.value = retId;
-            return o;
-        })
+            const retObj = {...o};
+            retObj.id = {...retObj.id};
+            retObj.id.value = retId;
+            return retObj;
+        });
         return retId;
     });
 
@@ -85,7 +87,7 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                 let relationQueue = [];
 
                 // populate retObj
-                let storeRelationQueue = true; // this is for collecting the relationQueue but not including any nested objects
+                let nested = false; // this is for collecting the relationQueue but not including any nested objects
                 while (queue.length > 0) {
                     let [transverseRetObj, transverseObj] = queue.shift(); // get the nested obj and nested rendering
 
@@ -98,11 +100,11 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                         } else if (transverseObj[key].value) { // else create a new [nested obj, nested rendering] and push to queue
                             let newObj = {}
                             transverseRetObj[key] = newObj;
-                            storeRelationQueue && relationQueue.push({name:key, data:newObj}); // store relation obj for later updating if not nested
+                            relationQueue.push({name:key, data:newObj, nested: nested}); // store relation obj for later updating if not nested
                             queue.push([newObj, transverseObj[key].relatedRendering]);
                         }
                     }
-                    storeRelationQueue = false; // this sets to false because all other objects are nested
+                    nested = true; // this sets to false because all other objects are nested
                 }
 
                 // Update the related docs
@@ -111,13 +113,12 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                 // Get relation reference docs
                 const relationObjs = await Promise.all(relationQueue.map(({name, data}) => transaction.get(doc(firestore, name, data.id))));
                 // update relations and include doc ref
-                relationQueue.forEach( ({name, data}, i) => {
+                relationQueue.forEach( ({name, data, nested}, i) => {
                     const ref = relationObjs[i].ref;
                     const oldData = relationObjs[i].data();
                     transaction.update(ref, {
                         ...data,
-                        /////////////////////////////////////////////////////// this is the line
-                        [collectionName+'s']: (oldData[collectionName+'s']||[]).concat([docRef]),
+                        ...(!nested && {[collectionName+'s']: (oldData[collectionName+'s']||[]).concat([docRef])}),
                         lastEdited: serverTimestamp(),
                         'metadata.fromFunction': false,
                     });
@@ -192,6 +193,10 @@ export default function Forms({id, collectionName, title, initialObj, renderList
         });
 
     }
+
+    /////////////////////////
+    // Auto Complete stuff //
+    /////////////////////////
 
     // get info
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -376,6 +381,14 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                         ))}
                         {/* Submit button */}
                         <Box sx={{pt: '1%', display:'flex', alignItems:'center', justifyContent:'center', width:totalWidth(1/2)}}>
+                            <Button 
+                                color='offGrey' 
+                                variant='text' 
+                                sx={{width:totalWidth(1/8)}} 
+                                disabled={loading}
+                                >
+                                Clear
+                            </Button>
                             <Button 
                                 type='submit'
                                 color='darkRed' 

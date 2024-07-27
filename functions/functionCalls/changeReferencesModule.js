@@ -1,4 +1,12 @@
 
+/*
+    Purpose is to handle when reference changes. for example, when object A references object B and then object A is changed to reference object C,
+    I want to remove the reference connecting reference A to reference B and also check if reference C has reference A.
+
+    This is for everything that can edit other table values.
+*/
+
+
 const {getFirestore, FieldValue} = require("firebase-admin/firestore");
 const { HttpsError} = require("firebase-functions/v2/https");
 
@@ -126,6 +134,50 @@ exports.handleBuildingReferences = async (event) => {
                 const addedReferenceList = afterDataList.concat([afterData.ref]);
                 transaction.update(group[1].ref, { // update
                     buildings: addedReferenceList,
+                    'metadata.fromFunction': true,
+                    lastEdited: FieldValue.serverTimestamp(),
+                });
+            }
+        });
+    });
+
+    return { success:true };
+}
+
+
+exports.handleAddressReferences = async (event) => {
+    // get data
+    const beforeData = event.data.before;
+    const afterData = event.data.after;
+    // check if this update is from a cloud function
+    if (afterData.data().metadata.fromFunction) return;
+    // get database
+    const db = getFirestore();
+    // get difference data
+    let changed = [];
+    beforeData.data().building.id !== afterData.data().building.id && changed.push(['building', beforeData.data().building.id, afterData.data().building.id]);
+    beforeData.data().building.property.id !== afterData.data().building.property.id && changed.push(['property', beforeData.data().building.property.id, afterData.data().building.property.id]);
+    beforeData.data().building.property.entity.id !== afterData.data().building.property.entity.id && changed.push(['entity', beforeData.data().building.property.entity.id, afterData.data().building.property.entity.id]);
+
+    db.runTransaction(async transaction => {
+        // get assessment collection
+        changed = changed.map(v => Promise.all([db.collection(v[0]).doc(v[1]).get(), db.collection(v[0]).doc(v[2]).get()]));
+        changed = await Promise.all(changed);
+        // get new reference list
+        changed.forEach((group) => {
+            // filter out old reference
+            const filteredReferenceList = group[0].data().buildings.filter(ref => ref.id !== afterData.ref.id);
+            transaction.update(group[0].ref, { // update
+                addresss: filteredReferenceList,
+                'metadata.fromFunction': true,
+                lastEdited: FieldValue.serverTimestamp(),
+            });
+            // check if new one has reference added
+            const afterDataList = group[1].data().buildings||[]
+            if (afterDataList.every(ref => ref.id !== afterData.ref.id)) {
+                const addedReferenceList = afterDataList.concat([afterData.ref]);
+                transaction.update(group[1].ref, { // update
+                    addresss: addedReferenceList,
                     'metadata.fromFunction': true,
                     lastEdited: FieldValue.serverTimestamp(),
                 });

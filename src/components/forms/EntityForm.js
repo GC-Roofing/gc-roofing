@@ -12,7 +12,7 @@ import MenuItem from '@mui/material/MenuItem';
 
 const collectionName = 'entity';
 
-const inputObj = {
+export const inputObj = () => ({//////////////////////////////////
     id: {
         field: 'id',
         label: 'Entity ID',
@@ -145,31 +145,35 @@ const inputObj = {
         relation: false,
         required: true,
     },
-};
+});
 
-const inputRenderList = [
-    [ // row title
-        ({textField, obj, sizing}) => {
-            return (
-                <Typography sx={{ fontWeight:'bold', ...sizing(1/2)}}>Entity</Typography>
-                );
-        },
-    ],
+export const inputRenderList = (fieldList) => [
     [ // row 1
         ({textField, obj, sizing}) => {
-            const {label, value, required} = obj.name;
+            const {label, value, required} = getNestedObj(obj, fieldList).name;
             return (
                 <>
                     <TextField 
-                        {...textField(['name'])} 
-                        sx={{...sizing(1/2)}} 
+                        {...textField(fieldList.concat(['name']))} 
+                        sx={{
+                            ...sizing(1/2),
+                            display: (!Boolean(getNestedObj(obj, fieldList).id.value))
+                                ? 'none'
+                                : 'flex'
+                        }}  
                         label={label}
                         value={value}
                         required={required}
                         />
-                    <Box>
-                        <Typography sx={{ fontWeight:'bold' }}>{obj.id.label}:</Typography>
-                        <Typography>{obj.id.value}</Typography>
+                    <Box
+                        sx={{
+                            display: (!Boolean(getNestedObj(obj, fieldList).id.value))
+                                ? 'none'
+                                : 'block'
+                        }}
+                        >
+                        <Typography sx={{ fontWeight:'bold' }}>{getNestedObj(obj, fieldList).id.label}:</Typography>
+                        <Typography>{getNestedObj(obj, fieldList).id.value}</Typography>
                     </Box>
                 </>
                 );
@@ -177,11 +181,16 @@ const inputRenderList = [
     ],
     [ // row 2
         ({textField, obj, sizing}) => {
-            const {label, value, required} = obj.type;
+            const {label, value, required} = getNestedObj(obj, fieldList).type;
             return (
                 <TextField 
-                    {...textField(['type'])} 
-                    sx={{...sizing(1/2)}} 
+                    {...textField(fieldList.concat(['type']))} 
+                    sx={{
+                        ...sizing(1/2),
+                        display: (!Boolean(getNestedObj(obj, fieldList).id.value))
+                            ? 'none'
+                            : 'flex'
+                    }}  
                     select
                     label={label}
                     value={value}
@@ -198,11 +207,16 @@ const inputRenderList = [
     ],
     [ // row 3
         ({textField, obj, sizing}) => {
-            const {label, value, required} = obj.billingName;
+            const {label, value, required} = getNestedObj(obj, fieldList).billingName;
             return (
                 <TextField 
-                    {...textField(['billingName'])} 
-                    sx={{...sizing(1/6)}} 
+                    {...textField(fieldList.concat(['billingName']))} 
+                    sx={{
+                        ...sizing(1/6),
+                        display: (!Boolean(getNestedObj(obj, fieldList).id.value))
+                            ? 'none'
+                            : 'flex'
+                    }}  
                     label={label}
                     value={value}
                     required={required}
@@ -210,11 +224,16 @@ const inputRenderList = [
                 );
         },
         ({textField, obj, sizing}) => {
-            const {label, value, required} = obj.billingEmail;
+            const {label, value, required} = getNestedObj(obj, fieldList).billingEmail;
             return (
                 <TextField 
-                    {...textField(['billingEmail'])} 
-                    sx={{...sizing(1/3)}} 
+                    {...textField(fieldList.concat(['billingEmail']))} 
+                    sx={{
+                        ...sizing(1/3),
+                        display: (!Boolean(getNestedObj(obj, fieldList).id.value))
+                            ? 'none'
+                            : 'flex'
+                    }}  
                     type='email'
                     label={label}
                     value={value}
@@ -225,11 +244,16 @@ const inputRenderList = [
     ],
     [ // row 4
         ({textField, obj, sizing}) => {
-            const {label, value, required} = obj.contactName;
+            const {label, value, required} = getNestedObj(obj, fieldList).contactName;
             return (
                 <TextField 
-                    {...textField(['contactName'])} 
-                    sx={{...sizing(1/6)}} 
+                    {...textField(fieldList.concat(['contactName']))} 
+                    sx={{
+                        ...sizing(1/6),
+                        display: (!Boolean(getNestedObj(obj, fieldList).id.value))
+                            ? 'none'
+                            : 'flex'
+                    }}  
                     label={label}
                     value={value}
                     required={required}
@@ -237,11 +261,16 @@ const inputRenderList = [
                 );
         },
         ({textField, obj, sizing}) => {
-            const {label, value, required} = obj.contactEmail;
+            const {label, value, required} = getNestedObj(obj, fieldList).contactEmail;
             return (
                 <TextField 
-                    {...textField(['contactEmail'])} 
-                    sx={{...sizing(1/3)}} 
+                    {...textField(fieldList.concat(['contactEmail']))} 
+                    sx={{
+                        ...sizing(1/3),
+                        display: (!Boolean(getNestedObj(obj, fieldList).id.value))
+                            ? 'none'
+                            : 'flex'
+                    }}  
                     type='email'
                     label={label}
                     value={value}
@@ -252,20 +281,31 @@ const inputRenderList = [
     ],
     [ // row 5
         ({textField, obj, sizing}) => {
-            const {label, value, required} = obj.address;
+            const {label, value, required} = getNestedObj(obj, fieldList).address;
             return (
                 <>
                     <TextField 
-                        {...textField(['address'])} 
-                        sx={{...sizing(1/2)}} 
+                        {...textField(fieldList.concat(['address']))} 
+                        sx={{
+                            ...sizing(1/2),
+                            display: (!Boolean(getNestedObj(obj, fieldList).id.value))
+                                ? 'none'
+                                : 'flex'
+                        }}  
                         label={label}
                         value={value}
                         required={required}
                         />
-                    <Box>
+                    <Box
+                        sx={{
+                            display: (!Boolean(getNestedObj(obj, fieldList).id.value))
+                                ? 'none'
+                                : 'block'
+                        }}  
+                        >
                         <Typography sx={{ fontWeight:'bold' }}>Full Address:</Typography>
                         <Typography>
-                            {obj.fullAddress.formula(obj)}
+                            {getNestedObj(obj, fieldList).fullAddress.formula(getNestedObj(obj, fieldList))}
                         </Typography>
                     </Box>
                 </>
@@ -274,11 +314,16 @@ const inputRenderList = [
     ],
     [ // row 6
         ({textField, obj, sizing}) => {
-            const {label, value, required} = obj.city;
+            const {label, value, required} = getNestedObj(obj, fieldList).city;
             return (
                 <TextField 
-                    {...textField(['city'])} 
-                    sx={{...sizing(1/4)}} 
+                    {...textField(fieldList.concat(['city']))} 
+                    sx={{
+                        ...sizing(1/4),
+                        display: (!Boolean(getNestedObj(obj, fieldList).id.value))
+                            ? 'none'
+                            : 'flex'
+                    }}  
                     label={label}
                     value={value}
                     required={required}
@@ -286,11 +331,16 @@ const inputRenderList = [
                 );
         },
         ({textField, obj, sizing}) => {
-            const {label, value, required} = obj.state;
+            const {label, value, required} = getNestedObj(obj, fieldList).state;
             return (
                 <TextField 
-                    {...textField(['state'])} 
-                    sx={{...sizing(1/8)}} 
+                    {...textField(fieldList.concat(['state']))} 
+                    sx={{
+                        ...sizing(1/8),
+                        display: (!Boolean(getNestedObj(obj, fieldList).id.value))
+                            ? 'none'
+                            : 'flex'
+                    }}  
                     label={label}
                     value={value}
                     required={required}
@@ -298,11 +348,16 @@ const inputRenderList = [
                 );
         },
         ({textField, obj, sizing}) => {
-            const {label, value, required} = obj.zip;
+            const {label, value, required} = getNestedObj(obj, fieldList).zip;
             return (
                 <TextField 
-                    {...textField(['zip'])} 
-                    sx={{...sizing(1/8)}} 
+                    {...textField(fieldList.concat(['zip']))} 
+                    sx={{
+                        ...sizing(1/8),
+                        display: (!Boolean(getNestedObj(obj, fieldList).id.value))
+                            ? 'none'
+                            : 'flex'
+                    }}  
                     label={label}
                     value={value}
                     required={required}
@@ -321,8 +376,8 @@ export default function EntityForm({id}) {
             id={id}
             collectionName={collectionName}
             title='Entity'
-            initialObj={inputObj}
-            renderList={inputRenderList}
+            initialObj={inputObj()}//////////////////////////
+            renderList={inputRenderList([])}/////////////////
             />
     );
 }
@@ -355,7 +410,16 @@ async function geocode(address) {
     return gs;
 };
 
+// get nested attribute
 
+function getNestedObj(obj, fieldList) {///////////////////////////////
+    let transverseObj = obj;
+    for (let key of fieldList) {
+        transverseObj = transverseObj[key].relatedRendering;
+    }
+
+    return transverseObj;
+}
 
 
 
