@@ -1,0 +1,23 @@
+[debug] [2024-07-28T20:08:10.303Z] ----------------------------------------------------------------------
+[debug] [2024-07-28T20:08:10.304Z] Command:       /usr/local/bin/node /usr/local/bin/firebase deploy
+[debug] [2024-07-28T20:08:10.304Z] CLI Version:   13.11.3
+[debug] [2024-07-28T20:08:10.304Z] Platform:      darwin
+[debug] [2024-07-28T20:08:10.304Z] Node Version:  v20.10.0
+[debug] [2024-07-28T20:08:10.304Z] Time:          Sun Jul 28 2024 13:08:10 GMT-0700 (Pacific Daylight Time)
+[debug] [2024-07-28T20:08:10.304Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2024-07-28T20:08:10.333Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2024-07-28T20:08:10.333Z] > authorizing via signed-in user (derek.gc.roofing@gmail.com)
+[debug] [2024-07-28T20:08:10.333Z] [iam] checking project gc-roofing for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2024-07-28T20:08:10.334Z] > refreshing access token with scopes: []
+[debug] [2024-07-28T20:08:10.334Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2024-07-28T20:08:10.334Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2024-07-28T20:08:10.598Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2024-07-28T20:08:10.599Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2024-07-28T20:08:10.611Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/gc-roofing:testIamPermissions [none]
+[debug] [2024-07-28T20:08:10.611Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/gc-roofing:testIamPermissions x-goog-quota-user=projects/gc-roofing
+[debug] [2024-07-28T20:08:10.611Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/gc-roofing:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2024-07-28T20:08:10.957Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/gc-roofing:testIamPermissions 200
+[debug] [2024-07-28T20:08:10.957Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/gc-roofing:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2024-07-28T20:08:10.958Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/gc-roofing/serviceAccounts/gc-roofing@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2024-07-28T20:08:10.958Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/gc-roofing/serviceAccounts/gc-roofing@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}

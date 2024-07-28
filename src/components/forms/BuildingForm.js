@@ -1,5 +1,6 @@
 import Forms from './Forms';
 import {inputObj as propertyInputObj, inputRenderList as propertyRenderList} from './PropertyForm'; //////////////////////
+import {inputObj as managementInputObj, inputRenderList as managementRenderList} from './ManagementForm'; //////////////////////
 
 import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
@@ -37,6 +38,18 @@ export const inputObj = () => ({ ///////////////////////////
             ...propertyInputObj()
         },
     },
+    management: {
+        field: 'management',
+        label: 'Management',
+        value: '',
+        typeFunc: String,
+        relation: true,
+        required: false,
+        options: [],
+        relatedRendering: {
+            ...managementInputObj()
+        },
+    }
 });
 
 export const inputRenderList = (fieldList) => [
@@ -117,7 +130,54 @@ export const inputRenderList = (fieldList) => [
                 );
         },
     ],
-    ...propertyRenderList(fieldList.concat(['property']))
+    ...propertyRenderList(fieldList.concat(['property'])),
+    [ // row title
+        ({textField, obj, sizing}) => {
+            return (
+                <Typography 
+                    sx={{ 
+                        fontWeight:'bold', 
+                        ...sizing(1/2),
+                        display: (!Boolean(getNestedObj(obj, fieldList).id.value))
+                            ? 'none'
+                            : 'block'
+                    }}
+                    >
+                    Management
+                </Typography>
+                );
+        },
+    ],
+    [ // row 4
+        ({autoComplete, obj, sizing}) => {
+            const {label, value, required, options} = getNestedObj(obj, fieldList).management;
+            const id = getNestedObj(obj, fieldList).management.relatedRendering.id;
+            return (
+                <Autocomplete 
+                    {...autoComplete(fieldList.concat(['management']), 'name')} 
+                    sx={{
+                        ...sizing(1/2),
+                        display: (!Boolean(getNestedObj(obj, fieldList).id.value))
+                            ? 'none'
+                            : 'flex'
+                    }}  
+                    options={options}
+                    value={{
+                        id: id.value || options[0]?.data.id, // either an existing value or first option
+                        label: value,
+                    }}
+                    renderInput={(params) => (
+                        <TextField 
+                            {...params}
+                            label={label} 
+                            required={required}
+                            />
+                    )}
+                    />
+                );
+        },
+    ],
+    ...managementRenderList(fieldList.concat(['management'])),
 ];
 
 

@@ -111,7 +111,7 @@ export const inputObj = () => ({ ///////////////////////////
         value: '',
         typeFunc: String,
         relation: true,
-        required: true,
+        required: false,
         options: [],
         relatedRendering: {
             ...entityInputObj(), /////////////////////////////////

@@ -4,6 +4,7 @@ import {firestore} from '../../firebase';
 
 import Forms from './Forms';
 import {inputObj as buildingInputObj, inputRenderList as buildingRenderList} from './BuildingForm';
+import {inputObj as tenantInputObj, inputRenderList as tenantRenderList} from './TenantForm';
 
 import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
@@ -16,14 +17,6 @@ const inputObj = {
     id: {
         field: 'id',
         label: 'Address ID',
-        value: '',
-        typeFunc: String,
-        relation: false,
-        required: true,
-    },
-    name: {
-        field: 'name',
-        label: 'Address Name',
         value: '',
         typeFunc: String,
         relation: false,
@@ -125,29 +118,21 @@ const inputObj = {
             ...buildingInputObj(),
         }
     },
+    tenant: {
+        field: 'tenant',
+        label: 'Tenant',
+        value: '',
+        typeFunc: String,
+        relation: true,
+        required: false,
+        options: [],
+        relatedRendering: {
+            ...tenantInputObj(),
+        }
+    },
 };
 
 export const inputRenderList = (fieldList) => [
-    [ // row 1
-        ({textField, obj, sizing}) => {
-            const {label, value, required} = getNestedObj(obj, fieldList).name;
-            return (
-                <>
-                    <TextField 
-                        {...textField(['name'])} 
-                        sx={{...sizing(1/2)}} 
-                        label={label}
-                        value={value}
-                        required={required}
-                        />
-                    <Box>
-                        <Typography sx={{ fontWeight:'bold' }}>Address ID:</Typography>
-                        <Typography>{getNestedObj(obj, fieldList).id.value}</Typography>
-                    </Box>
-                </>
-                );
-        },
-    ],
     [ // row 2
         ({textField, obj, sizing}) => {
             const {label, value, required} = getNestedObj(obj, fieldList).unit;
@@ -173,10 +158,8 @@ export const inputRenderList = (fieldList) => [
                         required={required}
                         />
                     <Box>
-                        <Typography sx={{ fontWeight:'bold' }}>Full Address:</Typography>
-                        <Typography>
-                            {getNestedObj(obj, fieldList).fullAddress.formula(getNestedObj(obj, fieldList))}
-                        </Typography>
+                        <Typography sx={{ fontWeight:'bold' }}>Address ID:</Typography>
+                        <Typography>{getNestedObj(obj, fieldList).id.value}</Typography>
                     </Box>
                 </>
                 );
@@ -210,13 +193,21 @@ export const inputRenderList = (fieldList) => [
         ({textField, obj, sizing}) => {
             const {label, value, required} = getNestedObj(obj, fieldList).zip;
             return (
-                <TextField 
-                    {...textField(['zip'])} 
-                    sx={{...sizing(1/8)}} 
-                    label={label}
-                    value={value}
-                    required={required}
-                    />
+                <>
+                    <TextField 
+                        {...textField(['zip'])} 
+                        sx={{...sizing(1/8)}} 
+                        label={label}
+                        value={value}
+                        required={required}
+                        />
+                    <Box>
+                        <Typography sx={{ fontWeight:'bold' }}>Full Address:</Typography>
+                        <Typography>
+                            {getNestedObj(obj, fieldList).fullAddress.formula(getNestedObj(obj, fieldList))}
+                        </Typography>
+                    </Box>
+                </>
                 );
         },
     ],
@@ -252,6 +243,38 @@ export const inputRenderList = (fieldList) => [
         },
     ],
     ...buildingRenderList(fieldList.concat(['building'])),
+    [ // row title
+        ({textField, obj, sizing}) => {
+            return (
+                <Typography sx={{ fontWeight:'bold', ...sizing(1/2)}}>Tenant</Typography>
+                );
+        },
+    ],
+    [ // row 4
+        ({autoComplete, obj, sizing}) => {
+            const {label, value, required, options} = getNestedObj(obj, fieldList).tenant;
+            const id = getNestedObj(obj, fieldList).tenant.relatedRendering.id;
+            return (
+                <Autocomplete 
+                    {...autoComplete(fieldList.concat(['tenant']), 'name')} 
+                    sx={{...sizing(1/2)}}
+                    options={options}
+                    value={{
+                        id: id.value || options[0]?.data.id, // either an existing value or first option
+                        label: value,
+                    }}
+                    renderInput={(params) => (
+                        <TextField 
+                            {...params}
+                            label={label} 
+                            required={required}
+                            />
+                    )}
+                    />
+                );
+        },
+    ],
+    ...tenantRenderList(fieldList.concat(['tenant'])),
 ];
 
 

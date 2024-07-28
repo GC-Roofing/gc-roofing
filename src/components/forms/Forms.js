@@ -292,8 +292,9 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                             transverseObj[v] = {...transverseObj[v]}; // copy
                             if (!transverseObj[v].relation) { // if not relation, update value
                                 transverseObj[v].value = transverseData[v]
-                            } else { // else add it
+                            } else if (transverseData[v]) { // else add it if there is another related object
                                 transverseObj[v].relatedRendering = {...transverseObj[v].relatedRendering}; // copy
+                                transverseObj[v].value = transverseData[v][label]; // set the value of autocomplete to label
                                 queue.push([transverseObj[v].relatedRendering, transverseData[v]]);
                             }
                         }
@@ -352,12 +353,14 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                         {renderList.map((row, i) => (
                             <Box key={i} sx={{display:'flex', alignItems:'center'}}>
                                 {/* rows */}
-                                {row.map((Component, i) => (
+                                {row.map((Component, j) => (
                                     <Component 
-                                        key={i}
+                                        key={j}
                                         textField={(fieldList) => ({
                                             size:'small',
                                             onChange: handleChange(fieldList),
+                                            name: String(i*100+j) + fieldList,
+                                            disabled: !Boolean(getNestedObj(obj, fieldList.slice(0,-1)).id.value)
                                         })}
                                         autoComplete={(fieldList, label) => ({
                                             autoHighlight: true,
@@ -368,6 +371,7 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                                             onClose: handleClose(fieldList, label),
                                             onChange: handleSelect(fieldList, label),
                                             onInputChange: handleChange(fieldList),
+                                            disabled: !Boolean(getNestedObj(obj, fieldList.slice(0,-1)).id.value),
                                             isOptionEqualToValue: (option, value) => {
                                                 if (!option) return false;
                                                 return value.id === option.data?.id;
@@ -382,10 +386,13 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                         {/* Submit button */}
                         <Box sx={{pt: '1%', display:'flex', alignItems:'center', justifyContent:'center', width:totalWidth(1/2)}}>
                             <Button 
+                                type='button'
                                 color='offGrey' 
-                                variant='text' 
-                                sx={{width:totalWidth(1/8)}} 
+                                variant='contained' 
+                                disableElevation
+                                sx={{width:totalWidth(1/8), m:margin}} 
                                 disabled={loading}
+                                onClick={clear}
                                 >
                                 Clear
                             </Button>
@@ -420,6 +427,15 @@ function debounce(delay, func) {
             func.apply(this, args);
         }, delay);
     };
+}
+
+function getNestedObj(obj, fieldList) {
+    let transverseObj = obj;
+    for (let key of fieldList) {
+        transverseObj = transverseObj[key].relatedRendering;
+    }
+
+    return transverseObj;
 }
 
 

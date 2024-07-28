@@ -1,7 +1,5 @@
 import Forms from './Forms';
 import {inputObj as propertyInputObj, inputRenderList as propertyRenderList} from './PropertyForm'; //////////////////////
-import {inputObj as managementInputObj, inputRenderList as managementRenderList} from './ManagementForm'; //////////////////////
-import {inputObj as tenantInputObj, inputRenderList as tenantRenderList} from './TenantForm'; //////////////////////
 
 import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
@@ -34,30 +32,6 @@ export const inputObj = () => ({ ///////////////////////////
         typeFunc: String,
         relation: false,
         required: false,
-    },
-    tenant: {
-        field: 'tenant',
-        label: 'Tenant',
-        value: '',
-        typeFunc: String,
-        relation: true,
-        required: false,
-        options: [],
-        relatedRendering: {
-            ...tenantInputObj(),
-        }
-    },
-    management: {
-        field: 'management',
-        label: 'Management',
-        value: '',
-        typeFunc: String,
-        relation: true,
-        required: false,
-        options: [],
-        relatedRendering: {
-            ...managementInputObj(),
-        }
     },
     property: {
         field: 'property',
@@ -139,87 +113,11 @@ export const inputRenderList = (fieldList) => [
                                 />
                         )}
                         />
-                    <Box>
-                        <Typography sx={{ fontWeight:'bold' }}>Property ID:</Typography>
-                        <Typography>{id.value}</Typography>
-                    </Box>
                 </>
                 );
         },
     ],
     ...propertyRenderList(fieldList.concat(['property'])),
-    [ // row title
-        ({textField, obj, sizing}) => {
-            return (
-                <Typography sx={{ fontWeight:'bold', ...sizing(1/2)}}>Tenant</Typography>
-                );
-        },
-    ],
-    [ // row 3
-        ({autoComplete, obj, sizing}) => {
-            const {label, value, required, options} = getNestedObj(obj, fieldList).tenant;
-            const id = getNestedObj(obj, fieldList).tenant.relatedRendering.id;
-            return (
-                <>
-                    <Autocomplete 
-                        {...autoComplete(fieldList.concat(['tenant']), 'name')} 
-                        sx={{...sizing(1/2)}}
-                        options={options}
-                        value={{
-                            id: id.value || options[0]?.data.id, // either an existing value or first option
-                            label: value,
-                        }}
-                        renderInput={(params) => (
-                            <TextField 
-                                {...params}
-                                label={label} 
-                                required={required}
-                                />
-                        )}
-                        />
-                </>
-                );
-        },
-    ],
-    ...tenantRenderList(fieldList.concat(['tenant'])),
-    [ // row title
-        ({textField, obj, sizing}) => {
-            return (
-                <Typography sx={{ fontWeight:'bold', ...sizing(1/2)}}>Management</Typography>
-                );
-        },
-    ],
-    [ // row 9
-        ({autoComplete, obj, sizing}) => {
-            const {label, value, required, options} = getNestedObj(obj, fieldList).management;
-            const id = getNestedObj(obj, fieldList).management.relatedRendering.id;
-            return (
-                <>
-                    <Autocomplete 
-                        {...autoComplete(fieldList.concat(['management']), 'name')} 
-                        sx={{...sizing(1/2)}}
-                        options={options}
-                        value={{
-                            id: id.value || options[0]?.data.id, // either an existing value or first option
-                            label: value,
-                        }}
-                        renderInput={(params) => (
-                            <TextField 
-                                {...params}
-                                label={label} 
-                                required={required}
-                                />
-                        )}
-                        />
-                    <Box>
-                        <Typography sx={{ fontWeight:'bold' }}>Management ID:</Typography>
-                        <Typography>{id.value}</Typography>
-                    </Box>
-                </>
-                );
-        },
-    ],
-    ...managementRenderList(fieldList.concat(['management']))
 ];
 
 
