@@ -92,7 +92,6 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                 let relationQueue = [];
 
                 // populate retObj
-                let nested = false; // this is for collecting the relationQueue but not including any nested objects
                 while (queue.length > 0) {
                     let [transverseRetObj, transverseObj] = queue.shift(); // get the nested obj and nested rendering
 
@@ -105,11 +104,10 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                         } else if (transverseObj[key].value) { // else create a new [nested obj, nested rendering] and push to queue
                             let newObj = {}
                             transverseRetObj[key] = newObj;
-                            relationQueue.push({name:key, data:newObj, nested: nested}); // store relation obj for later updating if not nested
+                            relationQueue.push({name:key, data:newObj}); // store relation obj for later updating if not nested
                             queue.push([newObj, transverseObj[key].relatedRendering]);
                         }
                     }
-                    nested = true; // this sets to false because all other objects are nested
                 }
 
                 // Update the related docs
@@ -118,12 +116,12 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                 // Get relation reference docs
                 const relationObjs = await Promise.all(relationQueue.map(({name, data}) => transaction.get(doc(firestore, name, data.id))));
                 // update relations and include doc ref
-                relationQueue.forEach( ({name, data, nested}, i) => {
+                relationQueue.forEach( ({name, data}, i) => {
                     const ref = relationObjs[i].ref;
                     const oldData = relationObjs[i].data();
                     transaction.update(ref, {
                         ...data,
-                        ...(!nested && {[collectionName+'s']: (oldData[collectionName+'s']||[]).concat([docRef.id])}),
+                        [collectionName+'s']: (oldData[collectionName+'s']||[]).concat([docRef.id]),
                         lastEdited: serverTimestamp(),
                         'metadata.fromFunction': false,
                     });
@@ -296,7 +294,11 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                         for (let v of Object.keys(transverseObj)) {
                             transverseObj[v] = {...transverseObj[v]}; // copy
                             if (!transverseObj[v].relation) { // if not relation, update value
-                                transverseObj[v].value = transverseData[v]
+                                if (transverseData[v] === undefined) {
+                                    transverseObj[v].value = transverseObj[v].defaultValue;
+                                } else {
+                                    transverseObj[v].value = transverseData[v];
+                                }
                             } else if (transverseData[v]) { // else add it if there is another related object
                                 transverseObj[v].relatedRendering = {...transverseObj[v].relatedRendering}; // copy
                                 transverseObj[v].value = transverseData[v][label]; // set the value of autocomplete to label

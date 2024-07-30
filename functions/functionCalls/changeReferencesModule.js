@@ -3,7 +3,7 @@
     Purpose is to handle when reference changes. for example, when object A references object B and then object A is changed to reference object C,
     I want to remove the reference connecting reference A to reference B and also check if reference C has reference A.
 
-    This is for everything that can edit other table values.
+    This is for everything that can reference other collections. If a referenced collection is changed, make sure that the db is up to date.
 */
 
 
@@ -20,7 +20,10 @@ exports.handleProposalReferences = async (event) => {
     const afterData = event.data.after;
     // check if this update is from a cloud function
     logger.log(afterData.data().metadata.fromFunction);
-    if (afterData.data().metadata.fromFunction) return;
+    logger.log(afterData.data().metadata.toChangeReference);
+    if (afterData.data().metadata.fromFunction 
+        && !afterData.data().metadata.toChangeReference
+        ) return;
     // get database
     const db = getFirestore();
     // get difference data
@@ -39,6 +42,7 @@ exports.handleProposalReferences = async (event) => {
             transaction.update(group[0].ref, { // update
                 proposals: filteredReferenceList,
                 'metadata.fromFunction': true,
+                'metadata.toChangeReference': false,
                 lastEdited: FieldValue.serverTimestamp(),
             });
             // check if new one has reference added
@@ -48,6 +52,7 @@ exports.handleProposalReferences = async (event) => {
                 transaction.update(group[1].ref, { // update
                     proposals: addedReferenceList,
                     'metadata.fromFunction': true,
+                    'metadata.toChangeReference': false,
                     lastEdited: FieldValue.serverTimestamp(),
                 });
             }
@@ -63,7 +68,10 @@ exports.handlePropertyReferences = async (event) => {
     const afterData = event.data.after;
     // check if this update is from a cloud function
     logger.log(afterData.data().metadata.fromFunction);
-    if (afterData.data().metadata.fromFunction) return;
+    logger.log(afterData.data().metadata.toChangeReference);
+    if (afterData.data().metadata.fromFunction 
+        && !afterData.data().metadata.toChangeReference
+        ) return;
     // get database
     const db = getFirestore()
     // get difference data
@@ -82,6 +90,7 @@ exports.handlePropertyReferences = async (event) => {
             transaction.update(group[0].ref, { // update
                 propertys: filteredReferenceList,
                 'metadata.fromFunction': true,
+                'metadata.toChangeReference': false,
                 lastEdited: FieldValue.serverTimestamp(),
             });
             // check if new one has reference added
@@ -91,6 +100,7 @@ exports.handlePropertyReferences = async (event) => {
                 transaction.update(group[1].ref, { // update
                     propertys: addedReferenceList,
                     'metadata.fromFunction': true,
+                    'metadata.toChangeReference': false,
                     lastEdited: FieldValue.serverTimestamp(),
                 });
             }
@@ -105,7 +115,11 @@ exports.handleBuildingReferences = async (event) => {
     const beforeData = event.data.before;
     const afterData = event.data.after;
     // check if this update is from a cloud function
-    if (afterData.data().metadata.fromFunction) return;
+    logger.log(afterData.data().metadata.fromFunction);
+    logger.log(afterData.data().metadata.toChangeReference);
+    if (afterData.data().metadata.fromFunction 
+        && !afterData.data().metadata.toChangeReference
+        ) return;
     // get database
     const db = getFirestore();
     // get difference data
@@ -125,6 +139,7 @@ exports.handleBuildingReferences = async (event) => {
             transaction.update(group[0].ref, { // update
                 buildings: filteredReferenceList,
                 'metadata.fromFunction': true,
+                'metadata.toChangeReference': false,
                 lastEdited: FieldValue.serverTimestamp(),
             });
             // check if new one has reference added
@@ -134,6 +149,7 @@ exports.handleBuildingReferences = async (event) => {
                 transaction.update(group[1].ref, { // update
                     buildings: addedReferenceList,
                     'metadata.fromFunction': true,
+                    'metadata.toChangeReference': false,
                     lastEdited: FieldValue.serverTimestamp(),
                 });
             }
@@ -149,7 +165,11 @@ exports.handleAddressReferences = async (event) => {
     const beforeData = event.data.before;
     const afterData = event.data.after;
     // check if this update is from a cloud function
-    if (afterData.data().metadata.fromFunction) return;
+    logger.log(afterData.data().metadata.fromFunction);
+    logger.log(afterData.data().metadata.toChangeReference);
+    if (afterData.data().metadata.fromFunction 
+        && !afterData.data().metadata.toChangeReference
+        ) return;
     // get database
     const db = getFirestore();
     // get difference data
@@ -166,19 +186,21 @@ exports.handleAddressReferences = async (event) => {
         // get new reference list
         changed.forEach((group) => {
             // filter out old reference
-            const filteredReferenceList = group[0].data().buildings.filter(id => id !== afterData.ref.id);
+            const filteredReferenceList = group[0].data().addresss.filter(id => id !== afterData.ref.id);
             transaction.update(group[0].ref, { // update
                 addresss: filteredReferenceList,
                 'metadata.fromFunction': true,
+                'metadata.toChangeReference': false,
                 lastEdited: FieldValue.serverTimestamp(),
             });
             // check if new one has reference added
-            const afterDataList = group[1].data().buildings||[]
+            const afterDataList = group[1].data().addresss||[]
             if (afterDataList.every(id => id !== afterData.ref.id)) {
                 const addedReferenceList = afterDataList.concat([afterData.ref.id]);
                 transaction.update(group[1].ref, { // update
                     addresss: addedReferenceList,
                     'metadata.fromFunction': true,
+                    'metadata.toChangeReference': false,
                     lastEdited: FieldValue.serverTimestamp(),
                 });
             }

@@ -10,7 +10,7 @@ const {getFirestore, FieldValue} = require("firebase-admin/firestore");
 const { HttpsError} = require("firebase-functions/v2/https");
 // const FieldValue = require("firebase-admin").FieldValue;
 
-// const logger = require("firebase-functions/logger");
+const logger = require("firebase-functions/logger");
 
 
 exports.handleEntityReferences = async (event) => {
@@ -21,6 +21,7 @@ exports.handleEntityReferences = async (event) => {
     const data = event.data.after.data();
 
     // check if this update is from a cloud function
+    logger.log(data.metadata.fromFunction);
     if (data.metadata.fromFunction) return;
 
     // get database
@@ -35,7 +36,7 @@ exports.handleEntityReferences = async (event) => {
         // querysnapshot
         let addressSnapshot = Promise.all((data.addresss||[]).map(v => address.doc(v).get()));
         let propertySnapshot = Promise.all((data.propertys||[]).map(v => property.doc(v).get()));
-        let buildingSnapshot = Promise.all((data.buildings||[]).map(v => bulding.doc(v).get()));
+        let buildingSnapshot = Promise.all((data.buildings||[]).map(v => building.doc(v).get()));
         let proposalSnapshot = Promise.all((data.proposals||[]).map(v => proposal.doc(v).get()));
 
 
@@ -50,6 +51,7 @@ exports.handleEntityReferences = async (event) => {
             transaction.update(doc.ref, {
                 'building.property.entity': updatedEntity,
                 'metadata.fromFunction': true,
+                'metadata.toChangeReference': true,
                 lastEdited: FieldValue.serverTimestamp(),
             });
         });
@@ -62,6 +64,7 @@ exports.handleEntityReferences = async (event) => {
             transaction.update(doc.ref, {
                 entity: updatedEntity,
                 'metadata.fromFunction': true,
+                'metadata.toChangeReference': true,
                 lastEdited: FieldValue.serverTimestamp(),
             });
         });
@@ -74,6 +77,7 @@ exports.handleEntityReferences = async (event) => {
             transaction.update(doc.ref, {
                 'property.entity': updatedEntity,
                 'metadata.fromFunction': true,
+                'metadata.toChangeReference': true,
                 lastEdited: FieldValue.serverTimestamp(),
             });
         });
@@ -86,6 +90,7 @@ exports.handleEntityReferences = async (event) => {
             transaction.update(doc.ref, {
                 'property.entity': updatedEntity,
                 'metadata.fromFunction': true,
+                'metadata.toChangeReference': true,
                 lastEdited: FieldValue.serverTimestamp(),
             });
         });
@@ -102,6 +107,7 @@ exports.handleManagementReferences = async (event) => {
     const data = event.data.after.data();
 
     // check if this update is from a cloud function
+    logger.log(data.metadata.fromFunction);
     if (data.metadata.fromFunction) return;
 
     // get database
@@ -127,6 +133,7 @@ exports.handleManagementReferences = async (event) => {
             transaction.update(doc.ref, {
                 'building.management': updatedManagement,
                 'metadata.fromFunction': true,
+                'metadata.toChangeReference': true,
                 lastEdited: FieldValue.serverTimestamp(),
             });
         });
@@ -139,6 +146,7 @@ exports.handleManagementReferences = async (event) => {
             transaction.update(doc.ref, {
                 management: updatedManagement,
                 'metadata.fromFunction': true,
+                'metadata.toChangeReference': true,
                 lastEdited: FieldValue.serverTimestamp(),
             });
         });
@@ -155,6 +163,7 @@ exports.handleTenantReferences = async (event) => {
     const data = event.data.after.data();
 
     // check if this update is from a cloud function
+    logger.log(data.metadata.fromFunction);
     if (data.metadata.fromFunction) return;
 
     // get database
@@ -178,6 +187,7 @@ exports.handleTenantReferences = async (event) => {
             transaction.update(doc.ref, {
                 tenant: updatedTenant,
                 'metadata.fromFunction': true,
+                'metadata.toChangeReference': true,
                 lastEdited: FieldValue.serverTimestamp(),
             });
         });
@@ -194,6 +204,7 @@ exports.handlePropertyReferences = async (event) => {
     const data = event.data.after.data();
 
     // check if this update is from a cloud function
+    logger.log(data.metadata.fromFunction);
     if (data.metadata.fromFunction) return;
 
     // get database
@@ -211,6 +222,7 @@ exports.handlePropertyReferences = async (event) => {
 
         [addressSnapshot, buildingSnapshot, proposalSnapshot] = await Promise.all([addressSnapshot, buildingSnapshot, proposalSnapshot]);
 
+
         // edit reference list
         addressSnapshot.forEach((doc) => {
             const updatedProperty = Object.keys(doc.data().building.property).reduce((acc, v) => {
@@ -220,6 +232,7 @@ exports.handlePropertyReferences = async (event) => {
             transaction.update(doc.ref, {
                 'building.property': updatedProperty,
                 'metadata.fromFunction': true,
+                'metadata.toChangeReference': true,
                 lastEdited: FieldValue.serverTimestamp(),
             });
         });
@@ -232,6 +245,7 @@ exports.handlePropertyReferences = async (event) => {
             transaction.update(doc.ref, {
                 property: updatedProperty,
                 'metadata.fromFunction': true,
+                'metadata.toChangeReference': true,
                 lastEdited: FieldValue.serverTimestamp(),
             });
         });
@@ -244,6 +258,7 @@ exports.handlePropertyReferences = async (event) => {
             transaction.update(doc.ref, {
                 property: updatedProperty,
                 'metadata.fromFunction': true,
+                'metadata.toChangeReference': true,
                 lastEdited: FieldValue.serverTimestamp(),
             });
         });
@@ -260,6 +275,7 @@ exports.handleBuildingReferences = async (event) => {
     const data = event.data.after.data();
 
     // check if this update is from a cloud function
+    logger.log(data.metadata.fromFunction);
     if (data.metadata.fromFunction) return;
 
     // get database
@@ -282,6 +298,7 @@ exports.handleBuildingReferences = async (event) => {
             transaction.update(doc.ref, {
                 building: updatedBuilding,
                 'metadata.fromFunction': true,
+                'metadata.toChangeReference': true,
                 lastEdited: FieldValue.serverTimestamp(),
             });
         });
