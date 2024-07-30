@@ -33,22 +33,22 @@ exports.handleEntityReferences = async (event) => {
         const building = db.collection('building');
         const proposal = db.collection('proposal');
         // querysnapshot
-        let addressSnapshot = Promise.all((data.addresss||[]).map(v => v.get()));
-        let propertySnapshot = Promise.all((data.propertys||[]).map(v => v.get()));
-        let buildingSnapshot = Promise.all((data.buildings||[]).map(v => v.get()));
-        let proposalSnapshot = Promise.all((data.proposals||[]).map(v => v.get()));
+        let addressSnapshot = Promise.all((data.addresss||[]).map(v => address.doc(v).get()));
+        let propertySnapshot = Promise.all((data.propertys||[]).map(v => property.doc(v).get()));
+        let buildingSnapshot = Promise.all((data.buildings||[]).map(v => bulding.doc(v).get()));
+        let proposalSnapshot = Promise.all((data.proposals||[]).map(v => proposal.doc(v).get()));
 
 
         [addressSnapshot, propertySnapshot, buildingSnapshot, proposalSnapshot] = await Promise.all([addressSnapshot, propertySnapshot, buildingSnapshot, proposalSnapshot]);
 
         // edit reference list
         addressSnapshot.forEach((doc) => {
-            const updatedEntity = Object.keys(doc.data().entity).reduce((acc, v) => {
+            const updatedEntity = Object.keys(doc.data().building.property.entity).reduce((acc, v) => {
                 acc[v] = data[v];
                 return acc;
             }, {});
             transaction.update(doc.ref, {
-                entity: updatedEntity,
+                'building.property.entity': updatedEntity,
                 'metadata.fromFunction': true,
                 lastEdited: FieldValue.serverTimestamp(),
             });
@@ -109,15 +109,29 @@ exports.handleManagementReferences = async (event) => {
 
     db.runTransaction(async transaction => {
         // get assessment collection
-        const proposal = db.collection('proposal');
+        const address = db.collection('address');
+        const building = db.collection('building');
         // querysnapshot
-        let proposalSnapshot = Promise.all((data.proposals||[]).map(v => v.get()));
+        let addressSnapshot = Promise.all((data.addresss||[]).map(v => address.doc(v).get()));
+        let buildingSnapshot = Promise.all((data.buildings||[]).map(v => building.doc(v).get()));
 
-        [proposalSnapshot] = await Promise.all([proposalSnapshot]);
+        [addressSnapshot, buildingSnapshot] = await Promise.all([addressSnapshot, buildingSnapshot]);
 
         // edit reference list
         // make sure to update lastEdited too.
-        proposalSnapshot.forEach((doc) => {
+        addressSnapshot.forEach((doc) => {
+            const updatedManagement = Object.keys(doc.data().building.management).reduce((acc, v) => {
+                acc[v] = data[v];
+                return acc;
+            }, {});
+            transaction.update(doc.ref, {
+                'building.management': updatedManagement,
+                'metadata.fromFunction': true,
+                lastEdited: FieldValue.serverTimestamp(),
+            });
+        });
+
+        buildingSnapshot.forEach((doc) => {
             const updatedManagement = Object.keys(doc.data().management).reduce((acc, v) => {
                 acc[v] = data[v];
                 return acc;
@@ -148,21 +162,21 @@ exports.handleTenantReferences = async (event) => {
 
     db.runTransaction(async transaction => {
         // get assessment collection
-        const proposal = db.collection('proposal');
+        const address = db.collection('address');
         // querysnapshot
-        let proposalSnapshot = Promise.all((data.proposals||[]).map(v => v.get()));
+        let addressSnapshot = Promise.all((data.addresss||[]).map(v => address.doc(v).get()));
 
-        [proposalSnapshot] = await Promise.all([proposalSnapshot]);
+        [addressSnapshot] = await Promise.all([addressSnapshot]);
 
         // edit reference list
         // make sure to update lastEdited too.
-        proposalSnapshot.forEach((doc) => {
+        addressSnapshot.forEach((doc) => {
             const updatedTenant = Object.keys(doc.data().tenant).reduce((acc, v) => {
                 acc[v] = data[v];
                 return acc;
             }, {});
             transaction.update(doc.ref, {
-                management: updatedTenant,
+                tenant: updatedTenant,
                 'metadata.fromFunction': true,
                 lastEdited: FieldValue.serverTimestamp(),
             });
@@ -191,20 +205,20 @@ exports.handlePropertyReferences = async (event) => {
         const building = db.collection('building');
         const proposal = db.collection('proposal');
         // querysnapshot
-        let addressSnapshot = Promise.all((data.addresss||[]).map(v => v.get()));
-        let buildingSnapshot = Promise.all((data.buildings||[]).map(v => v.get()));
-        let proposalSnapshot = Promise.all((data.proposals||[]).map(v => v.get()));
+        let addressSnapshot = Promise.all((data.addresss||[]).map(v => address.doc(v).get()));
+        let buildingSnapshot = Promise.all((data.buildings||[]).map(v => building.doc(v).get()));
+        let proposalSnapshot = Promise.all((data.proposals||[]).map(v => proposal.doc(v).get()));
 
         [addressSnapshot, buildingSnapshot, proposalSnapshot] = await Promise.all([addressSnapshot, buildingSnapshot, proposalSnapshot]);
 
         // edit reference list
         addressSnapshot.forEach((doc) => {
-            const updatedProperty = Object.keys(doc.data().property).reduce((acc, v) => {
+            const updatedProperty = Object.keys(doc.data().building.property).reduce((acc, v) => {
                 acc[v] = data[v];
                 return acc;
             }, {});
             transaction.update(doc.ref, {
-                property: updatedProperty,
+                'building.property': updatedProperty,
                 'metadata.fromFunction': true,
                 lastEdited: FieldValue.serverTimestamp(),
             });
@@ -255,7 +269,7 @@ exports.handleBuildingReferences = async (event) => {
         // get assessment collection
         const address = db.collection('address');
         // querysnapshot
-        let addressSnapshot = Promise.all((data.addresss||[]).map(v => v.get()));
+        let addressSnapshot = Promise.all((data.addresss||[]).map(v => address.doc(v).get()));
 
         [addressSnapshot] = await Promise.all([addressSnapshot]);
 

@@ -1,5 +1,5 @@
-import {useState, useCallback} from 'react';
-import { doc, collection, runTransaction, serverTimestamp } from "firebase/firestore";
+import {useState, useCallback, useEffect, useMemo} from 'react';
+import { doc, collection, runTransaction, serverTimestamp, getDoc } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 
 import {firestore, functions} from '../../firebase';
@@ -7,6 +7,11 @@ import {firestore, functions} from '../../firebase';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
+import MenuItem from '@mui/material/MenuItem';
+import Checkbox from '@mui/material/Checkbox';
+import TextField from '@mui/material/TextField';
+import Chip from '@mui/material/Chip';
+
 
 
 /////////// use onHIghlight to auto fill highlighted results so user can see
@@ -118,7 +123,7 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                     const oldData = relationObjs[i].data();
                     transaction.update(ref, {
                         ...data,
-                        ...(!nested && {[collectionName+'s']: (oldData[collectionName+'s']||[]).concat([docRef])}),
+                        ...(!nested && {[collectionName+'s']: (oldData[collectionName+'s']||[]).concat([docRef.id])}),
                         lastEdited: serverTimestamp(),
                         'metadata.fromFunction': false,
                     });
@@ -177,7 +182,7 @@ export default function Forms({id, collectionName, title, initialObj, renderList
 
                 for (let key in transverseObj) {
                     transverseObj[key] = {...transverseObj[key]}; // create a copy of the key
-                    transverseObj[key].value = '';
+                    transverseObj[key].value = transverseObj[key].defaultValue || '';
 
                     if (transverseObj[key].relation) { // copy the related rendering and then push it.
                         transverseObj[key].options = [];
@@ -324,7 +329,7 @@ export default function Forms({id, collectionName, title, initialObj, renderList
                         for (let v of Object.keys(transverseObj)) {
                             transverseObj[v] = {...transverseObj[v]}; // copy
                             if (!transverseObj[v].relation) { // if not relation, update value
-                                transverseObj[v].value = '';
+                                transverseObj[v].value = transverseObj[v].defaultValue || '';
                             } else { // else add it
                                 transverseObj[v].relatedRendering = {...transverseObj[v].relatedRendering}; // copy
                                 queue.push(transverseObj[v].relatedRendering);
@@ -436,6 +441,98 @@ function getNestedObj(obj, fieldList) {
     }
 
     return transverseObj;
+}
+
+
+export const CustomSelect = ({textFieldObj, attributeObj, options, sizing, fieldList, relationCollection, show, optionLabel}) => {
+    // initialize
+    const {label, value, required} = attributeObj;
+    const filteredOptions = useMemo(() => options.filter(v => v !== undefined), [options]);
+
+    // state
+    const [optionObjs, setOptionObjs] = useState([]); // list of objects
+    const [checked, setChecked] = useState([]);
+
+    // update
+    useEffect(() => { // get the objects for all the options
+        async function getOptions() {
+            const optionList = await Promise.all(filteredOptions.map(v => getDoc(doc(firestore, relationCollection, v))));
+            const optionData = optionList.map(v => v.data());
+            setOptionObjs(optionData);
+        }
+        getOptions();
+
+        // clear checked if options is deselected
+        setChecked([]);
+    }, [filteredOptions, relationCollection]);
+
+    // handlers
+    function handleChange(value) { // this is for adding or removing selected item to the checked
+        return ({target}) => {
+            if (!checked.includes(value)) {
+                setChecked(c => {
+                    const retC = c.concat(value);
+                    textFieldObj.onChange({target: {value: retC.map(v=>v.id)}});
+                    return retC;
+                });
+            } else {
+                setChecked(c => {
+                    const retC = c.filter(v => v !== value);
+                    textFieldObj.onChange({target: {value: retC.map(v=>v.id)}});
+                    return retC;
+                });
+            }
+        }
+    }
+
+    function handleSelectAll(event) {
+        if (checked.length === filteredOptions.length) {
+            setChecked([]);
+            textFieldObj.onChange({target: {value: []}});
+        } else {
+            setChecked(optionObjs);
+            textFieldObj.onChange({target: {value: filteredOptions}});
+        }
+    }
+
+    return (
+        <TextField 
+            {...textFieldObj} 
+            onChange={null} // control onChange manually
+            sx={{
+                ...sizing(1/2),
+                display: (!show)
+                    ? 'none'
+                    : 'flex'
+            }}  
+            select
+            SelectProps={{
+                multiple: true,
+                renderValue: (selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {}
+                        {checked.map((value, i) => (
+                            <Chip key={i} label={value[optionLabel]} />
+                        ))}
+                    </Box>
+                )
+            }}
+            label={label}
+            value={value}
+            required={required}
+            >
+            <MenuItem key={0} value={'select all'} onClick={handleSelectAll}>
+                <Checkbox checked={checked.length === filteredOptions.length}  />
+                Select all
+            </MenuItem>
+            {optionObjs.map((obj, i) => (
+                <MenuItem key={i+1} value={obj.id} onClick={handleChange(obj)}>
+                    <Checkbox checked={checked.includes(obj)}  />
+                    {obj[optionLabel]}
+                </MenuItem>
+            ))}
+        </TextField>
+        );
 }
 
 

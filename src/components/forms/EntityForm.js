@@ -8,6 +8,7 @@ import TextField from '@mui/material/TextField';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import MenuItem from '@mui/material/MenuItem';
+import Checkbox from '@mui/material/Checkbox';
 
 
 const collectionName = 'entity';
@@ -37,9 +38,25 @@ export const inputObj = () => ({//////////////////////////////////
         relation: false,
         required: true,
     },
-    billingName: {
-        field: 'billingName',
-        label: 'Billing Name',
+    billingEqualContact: {
+        field: 'billingEqualContact',
+        label: '',
+        value: false,
+        typeFunc: Boolean,
+        relation: false,
+        required: false,
+    },
+    billingFirstName: {
+        field: 'billingFirstName',
+        label: 'Billing First Name',
+        value: '',
+        typeFunc: String,
+        relation: false,
+        required: true,
+    },
+    billingLastName: {
+        field: 'billingLastName',
+        label: 'Billing Last Name',
         value: '',
         typeFunc: String,
         relation: false,
@@ -53,9 +70,67 @@ export const inputObj = () => ({//////////////////////////////////
         relation: false,
         required: true,
     },
-    contactName: {
-        field: 'contactName',
-        label: 'Contact Name',
+    billingAddress: {
+        field: 'billingAddress',
+        label: 'Billing Address',
+        value: '',
+        typeFunc: String,
+        relation: false,
+        required: true,
+    },
+    billingCity: {
+        field: 'billingCity',
+        label: 'Billing City',
+        value: '',
+        typeFunc: String,
+        relation: false,
+        required: true,
+    },
+    billingState: {
+        field: 'billingState',
+        label: 'Billing State',
+        value: '',
+        typeFunc: String,
+        relation: false,
+        required: true,
+    },
+    billingZip: {
+        field: 'billingZip',
+        label: 'Billing Zip Code',
+        value: '',
+        typeFunc: String,
+        relation: false,
+        required: true,
+    },
+    billingFullAddress: {
+        field: 'billingFullAddress',
+        label: 'Billing Full Address',
+        formula: (obj) => {
+            return (
+                obj.billingAddress.value +
+                (obj.billingAddress.value&&', ') +
+                obj.billingCity.value + 
+                (obj.billingCity.value&&', ') +
+                obj.billingState.value +
+                (obj.billingState.value&&' ') +
+                obj.billingZip.value
+                );
+        },
+        typeFunc: String,
+        relation: false,
+        required: true,
+    },
+    contactFirstName: {
+        field: 'contactFirstName',
+        label: 'Contact First Name',
+        value: '',
+        typeFunc: String,
+        relation: false,
+        required: true,
+    },
+    contactLastName: {
+        field: 'contactLastName',
+        label: 'Contact Last Name',
         value: '',
         typeFunc: String,
         relation: false,
@@ -207,12 +282,12 @@ export const inputRenderList = (fieldList) => [
     ],
     [ // row 3
         ({textField, obj, sizing}) => {
-            const {label, value, required} = getNestedObj(obj, fieldList).billingName;
+            const {label, value, required} = getNestedObj(obj, fieldList).contactFirstName;
             return (
                 <TextField 
-                    {...textField(fieldList.concat(['billingName']))} 
+                    {...textField(fieldList.concat(['contactFirstName']))} 
                     sx={{
-                        ...sizing(1/6),
+                        ...sizing(1/4),
                         display: (!Boolean(getNestedObj(obj, fieldList).id.value))
                             ? 'none'
                             : 'flex'
@@ -224,17 +299,16 @@ export const inputRenderList = (fieldList) => [
                 );
         },
         ({textField, obj, sizing}) => {
-            const {label, value, required} = getNestedObj(obj, fieldList).billingEmail;
+            const {label, value, required} = getNestedObj(obj, fieldList).contactLastName;
             return (
                 <TextField 
-                    {...textField(fieldList.concat(['billingEmail']))} 
+                    {...textField(fieldList.concat(['contactLastName']))} 
                     sx={{
-                        ...sizing(1/3),
+                        ...sizing(1/4),
                         display: (!Boolean(getNestedObj(obj, fieldList).id.value))
                             ? 'none'
                             : 'flex'
                     }}  
-                    type='email'
                     label={label}
                     value={value}
                     required={required}
@@ -242,31 +316,14 @@ export const inputRenderList = (fieldList) => [
                 );
         },
     ],
-    [ // row 4
-        ({textField, obj, sizing}) => {
-            const {label, value, required} = getNestedObj(obj, fieldList).contactName;
-            return (
-                <TextField 
-                    {...textField(fieldList.concat(['contactName']))} 
-                    sx={{
-                        ...sizing(1/6),
-                        display: (!Boolean(getNestedObj(obj, fieldList).id.value))
-                            ? 'none'
-                            : 'flex'
-                    }}  
-                    label={label}
-                    value={value}
-                    required={required}
-                    />
-                );
-        },
+    [ // row 3
         ({textField, obj, sizing}) => {
             const {label, value, required} = getNestedObj(obj, fieldList).contactEmail;
             return (
                 <TextField 
                     {...textField(fieldList.concat(['contactEmail']))} 
                     sx={{
-                        ...sizing(1/3),
+                        ...sizing(1/2),
                         display: (!Boolean(getNestedObj(obj, fieldList).id.value))
                             ? 'none'
                             : 'flex'
@@ -361,6 +418,180 @@ export const inputRenderList = (fieldList) => [
                     label={label}
                     value={value}
                     required={required}
+                    />
+                );
+        },
+    ],
+    [
+        ({textField, obj, sizing}) => {
+            const {value} = getNestedObj(obj, fieldList).billingEqualContact;
+
+            function handleChange(event) {
+                event.target.value = value ? '' : 'true';
+                textField(fieldList.concat(['billingEqualContact'])).onChange(event);
+                textField(fieldList.concat(['billingFirstName'])).onChange({target: {value: ''}});
+                textField(fieldList.concat(['billingLastName'])).onChange({target: {value: ''}});
+                textField(fieldList.concat(['billingEmail'])).onChange({target: {value: ''}});
+                textField(fieldList.concat(['billingAddress'])).onChange({target: {value: ''}});
+                textField(fieldList.concat(['billingCity'])).onChange({target: {value: ''}});
+                textField(fieldList.concat(['billingState'])).onChange({target: {value: ''}});
+                textField(fieldList.concat(['billingZip'])).onChange({target: {value: ''}});
+            }
+            return (
+                <Box
+                    sx={{
+                        display: (!Boolean(getNestedObj(obj, fieldList).id.value))
+                            ? 'none'
+                            : 'flex',
+                        alignItems: 'center',
+                        cursor: 'pointer'
+                    }}
+                    onClick={handleChange}
+                    >
+                    <Checkbox checked={Boolean(value)} />
+                    <Typography>Billing info is the same as contact info</Typography>
+                </Box>
+                );
+        },
+    ],
+    [ // row 3
+        ({textField, obj, sizing}) => {
+            const {label, value, required} = getNestedObj(obj, fieldList).billingFirstName;
+            return (
+                <TextField 
+                    {...textField(fieldList.concat(['billingFirstName']))} 
+                    sx={{
+                        ...sizing(1/4),
+                        display: (!Boolean(getNestedObj(obj, fieldList).id.value) || getNestedObj(obj, fieldList).billingEqualContact.value)
+                            ? 'none'
+                            : 'flex'
+                    }}  
+                    label={label}
+                    value={value}
+                    required={required && !getNestedObj(obj, fieldList).billingEqualContact.value}
+                    />
+                );
+        },
+        ({textField, obj, sizing}) => {
+            const {label, value, required} = getNestedObj(obj, fieldList).billingLastName;
+            return (
+                <TextField 
+                    {...textField(fieldList.concat(['billingLastName']))} 
+                    sx={{
+                        ...sizing(1/4),
+                        display: (!Boolean(getNestedObj(obj, fieldList).id.value) || getNestedObj(obj, fieldList).billingEqualContact.value)
+                            ? 'none'
+                            : 'flex'
+                    }}  
+                    label={label}
+                    value={value}
+                    required={required && !getNestedObj(obj, fieldList).billingEqualContact.value}
+                    />
+                );
+        },
+    ],
+    [ // row 3
+        ({textField, obj, sizing}) => {
+            const {label, value, required} = getNestedObj(obj, fieldList).billingEmail;
+            return (
+                <TextField 
+                    {...textField(fieldList.concat(['billingEmail']))} 
+                    sx={{
+                        ...sizing(1/2),
+                        display: (!Boolean(getNestedObj(obj, fieldList).id.value) || getNestedObj(obj, fieldList).billingEqualContact.value)
+                            ? 'none'
+                            : 'flex'
+                    }}  
+                    type='email'
+                    label={label}
+                    value={value}
+                    required={required && !getNestedObj(obj, fieldList).billingEqualContact.value}
+                    />
+                );
+        },
+    ],
+    [ // row 5
+        ({textField, obj, sizing}) => {
+            const {label, value, required} = getNestedObj(obj, fieldList).billingAddress;
+            return (
+                <>
+                    <TextField 
+                        {...textField(fieldList.concat(['billingAddress']))} 
+                        sx={{
+                            ...sizing(1/2),
+                            display: (!Boolean(getNestedObj(obj, fieldList).id.value) || getNestedObj(obj, fieldList).billingEqualContact.value)
+                                ? 'none'
+                                : 'flex'
+                        }}  
+                        label={label}
+                        value={value}
+                        required={required && !getNestedObj(obj, fieldList).billingEqualContact.value}
+                        />
+                    <Box
+                        sx={{
+                            display: (!Boolean(getNestedObj(obj, fieldList).id.value) || getNestedObj(obj, fieldList).billingEqualContact.value)
+                                ? 'none'
+                                : 'block'
+                        }}  
+                        >
+                        <Typography sx={{ fontWeight:'bold' }}>Full Billing Address:</Typography>
+                        <Typography>
+                            {getNestedObj(obj, fieldList).billingFullAddress.formula(getNestedObj(obj, fieldList))}
+                        </Typography>
+                    </Box>
+                </>
+                );
+        },
+    ],
+    [ // row 6
+        ({textField, obj, sizing}) => {
+            const {label, value, required} = getNestedObj(obj, fieldList).billingCity;
+            return (
+                <TextField 
+                    {...textField(fieldList.concat(['billingCity']))} 
+                    sx={{
+                        ...sizing(1/4),
+                        display: (!Boolean(getNestedObj(obj, fieldList).id.value) || getNestedObj(obj, fieldList).billingEqualContact.value)
+                            ? 'none'
+                            : 'flex'
+                    }}  
+                    label={label}
+                    value={value}
+                    required={required && !getNestedObj(obj, fieldList).billingEqualContact.value}
+                    />
+                );
+        },
+        ({textField, obj, sizing}) => {
+            const {label, value, required} = getNestedObj(obj, fieldList).billingState;
+            return (
+                <TextField 
+                    {...textField(fieldList.concat(['billingState']))} 
+                    sx={{
+                        ...sizing(1/8),
+                        display: (!Boolean(getNestedObj(obj, fieldList).id.value) || getNestedObj(obj, fieldList).billingEqualContact.value)
+                            ? 'none'
+                            : 'flex'
+                    }}  
+                    label={label}
+                    value={value}
+                    required={required && !getNestedObj(obj, fieldList).billingEqualContact.value}
+                    />
+                );
+        },
+        ({textField, obj, sizing}) => {
+            const {label, value, required} = getNestedObj(obj, fieldList).billingZip;
+            return (
+                <TextField 
+                    {...textField(fieldList.concat(['billingZip']))} 
+                    sx={{
+                        ...sizing(1/8),
+                        display: (!Boolean(getNestedObj(obj, fieldList).id.value) || getNestedObj(obj, fieldList).billingEqualContact.value)
+                            ? 'none'
+                            : 'flex'
+                    }}  
+                    label={label}
+                    value={value}
+                    required={required && !getNestedObj(obj, fieldList).billingEqualContact.value}
                     />
                 );
         },

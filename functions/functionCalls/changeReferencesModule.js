@@ -25,10 +25,8 @@ exports.handleProposalReferences = async (event) => {
     const db = getFirestore();
     // get difference data
     let changed = [];
-    beforeData.data().tenant.id !== afterData.data().tenant.id && changed.push(['tenant', beforeData.data().tenant.id, afterData.data().tenant.id]);
-    beforeData.data().management.id !== afterData.data().management.id && changed.push(['management', beforeData.data().management.id, afterData.data().management.id]);
-    beforeData.data().property.id !== afterData.data().property.id && changed.push(['property', beforeData.data().property.id, afterData.data().property.id]);
-    beforeData.data().property.entity.id !== afterData.data().property.entity.id && changed.push(['entity', beforeData.data().property.entity.id, afterData.data().property.entity.id]);
+    beforeData.data()?.property?.id !== afterData.data()?.property?.id && changed.push(['property', beforeData.data().property.id, afterData.data().property.id]);
+    beforeData.data()?.property?.entity?.id !== afterData.data()?.property?.entity?.id && changed.push(['entity', beforeData.data().property.entity.id, afterData.data().property.entity.id]);
 
     db.runTransaction(async transaction => {
         // get assessment collection
@@ -37,7 +35,7 @@ exports.handleProposalReferences = async (event) => {
         // get new reference list
         changed.forEach((group) => {
             // filter out old reference
-            const filteredReferenceList = group[0].data().proposals.filter(ref => ref.id !== afterData.ref.id);
+            const filteredReferenceList = group[0].data().proposals.filter(id => id !== afterData.ref.id);
             transaction.update(group[0].ref, { // update
                 proposals: filteredReferenceList,
                 'metadata.fromFunction': true,
@@ -45,8 +43,8 @@ exports.handleProposalReferences = async (event) => {
             });
             // check if new one has reference added
             const afterDataList = group[1].data().proposals||[]
-            if (afterDataList.every(ref => ref.id !== afterData.ref.id)) {
-                const addedReferenceList = afterDataList.concat([afterData.ref]);
+            if (afterDataList.every(id => id !== afterData.ref.id)) {
+                const addedReferenceList = afterDataList.concat([afterData.ref.id]);
                 transaction.update(group[1].ref, { // update
                     proposals: addedReferenceList,
                     'metadata.fromFunction': true,
@@ -70,7 +68,7 @@ exports.handlePropertyReferences = async (event) => {
     const db = getFirestore()
     // get difference data
     let changed = [];
-    beforeData.data().entity.id !== afterData.data().entity.id && changed.push(['entity', beforeData.data().entity.id, afterData.data().entity.id]);
+    beforeData.data()?.entity?.id !== afterData.data()?.entity?.id && changed.push(['entity', beforeData.data().entity.id, afterData.data().entity.id]);
     // get the afterData id document
     // and then do a get on it
     db.runTransaction(async transaction => {
@@ -80,7 +78,7 @@ exports.handlePropertyReferences = async (event) => {
         // get new reference list
         changed.forEach((group) => {
             // filter out old reference
-            const filteredReferenceList = group[0].data().propertys.filter(ref => ref.id !== afterData.ref.id);
+            const filteredReferenceList = group[0].data().propertys.filter(id => id !== afterData.ref.id);
             transaction.update(group[0].ref, { // update
                 propertys: filteredReferenceList,
                 'metadata.fromFunction': true,
@@ -88,8 +86,8 @@ exports.handlePropertyReferences = async (event) => {
             });
             // check if new one has reference added
             const afterDataList = group[1].data().propertys||[]
-            if (afterDataList.every(ref => ref.id !== afterData.ref.id)) {
-                const addedReferenceList = afterDataList.concat([afterData.ref]);
+            if (afterDataList.every(id => id !== afterData.ref.id)) {
+                const addedReferenceList = afterDataList.concat([afterData.ref.id]);
                 transaction.update(group[1].ref, { // update
                     propertys: addedReferenceList,
                     'metadata.fromFunction': true,
@@ -112,8 +110,9 @@ exports.handleBuildingReferences = async (event) => {
     const db = getFirestore();
     // get difference data
     let changed = [];
-    beforeData.data().property.id !== afterData.data().property.id && changed.push(['property', beforeData.data().property.id, afterData.data().property.id]);
-    beforeData.data().property.entity.id !== afterData.data().property.entity.id && changed.push(['entity', beforeData.data().property.entity.id, afterData.data().property.entity.id]);
+    beforeData.data()?.property?.id !== afterData.data()?.property?.id && changed.push(['property', beforeData.data().property.id, afterData.data().property.id]);
+    beforeData.data()?.property?.entity?.id !== afterData.data()?.property?.entity?.id && changed.push(['entity', beforeData.data().property.entity.id, afterData.data().property.entity.id]);
+    beforeData.data()?.management?.id !== afterData.data()?.management?.id && changed.push(['management', beforeData.data().management.id, afterData.data().management.id]);
 
     db.runTransaction(async transaction => {
         // get assessment collection
@@ -122,7 +121,7 @@ exports.handleBuildingReferences = async (event) => {
         // get new reference list
         changed.forEach((group) => {
             // filter out old reference
-            const filteredReferenceList = group[0].data().buildings.filter(ref => ref.id !== afterData.ref.id);
+            const filteredReferenceList = group[0].data().buildings.filter(id => id !== afterData.ref.id);
             transaction.update(group[0].ref, { // update
                 buildings: filteredReferenceList,
                 'metadata.fromFunction': true,
@@ -130,8 +129,8 @@ exports.handleBuildingReferences = async (event) => {
             });
             // check if new one has reference added
             const afterDataList = group[1].data().buildings||[]
-            if (afterDataList.every(ref => ref.id !== afterData.ref.id)) {
-                const addedReferenceList = afterDataList.concat([afterData.ref]);
+            if (afterDataList.every(id => id !== afterData.ref.id)) {
+                const addedReferenceList = afterDataList.concat([afterData.ref.id]);
                 transaction.update(group[1].ref, { // update
                     buildings: addedReferenceList,
                     'metadata.fromFunction': true,
@@ -155,9 +154,10 @@ exports.handleAddressReferences = async (event) => {
     const db = getFirestore();
     // get difference data
     let changed = [];
-    beforeData.data().building.id !== afterData.data().building.id && changed.push(['building', beforeData.data().building.id, afterData.data().building.id]);
-    beforeData.data().building.property.id !== afterData.data().building.property.id && changed.push(['property', beforeData.data().building.property.id, afterData.data().building.property.id]);
-    beforeData.data().building.property.entity.id !== afterData.data().building.property.entity.id && changed.push(['entity', beforeData.data().building.property.entity.id, afterData.data().building.property.entity.id]);
+    beforeData.data()?.building?.id !== afterData.data()?.building?.id && changed.push(['building', beforeData.data().building.id, afterData.data().building.id]);
+    beforeData.data()?.building?.property?.id !== afterData.data()?.building?.property?.id && changed.push(['property', beforeData.data().building.property.id, afterData.data().building.property.id]);
+    beforeData.data()?.building?.property?.entity?.id !== afterData.data()?.building?.property?.entity?.id && changed.push(['entity', beforeData.data().building.property.entity.id, afterData.data().building.property.entity.id]);
+    beforeData.data()?.tenant?.id !== afterData.data()?.tenant?.id && changed.push(['tenant', beforeData.data().tenant.id, afterData.data().tenant.id]);
 
     db.runTransaction(async transaction => {
         // get assessment collection
@@ -166,7 +166,7 @@ exports.handleAddressReferences = async (event) => {
         // get new reference list
         changed.forEach((group) => {
             // filter out old reference
-            const filteredReferenceList = group[0].data().buildings.filter(ref => ref.id !== afterData.ref.id);
+            const filteredReferenceList = group[0].data().buildings.filter(id => id !== afterData.ref.id);
             transaction.update(group[0].ref, { // update
                 addresss: filteredReferenceList,
                 'metadata.fromFunction': true,
@@ -174,8 +174,8 @@ exports.handleAddressReferences = async (event) => {
             });
             // check if new one has reference added
             const afterDataList = group[1].data().buildings||[]
-            if (afterDataList.every(ref => ref.id !== afterData.ref.id)) {
-                const addedReferenceList = afterDataList.concat([afterData.ref]);
+            if (afterDataList.every(id => id !== afterData.ref.id)) {
+                const addedReferenceList = afterDataList.concat([afterData.ref.id]);
                 transaction.update(group[1].ref, { // update
                     addresss: addedReferenceList,
                     'metadata.fromFunction': true,

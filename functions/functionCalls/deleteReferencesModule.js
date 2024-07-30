@@ -1,9 +1,12 @@
+/*
+    affects the same as change references
+*/ 
+
 
 const {getFirestore, FieldValue} = require("firebase-admin/firestore");
 const { HttpsError} = require("firebase-functions/v2/https");
 
 
-//////////////////// YOU SHOULD RUN THE READ AND WRITES AS A TRANSACTION SO THAT ATOMICITY IS KEPT
 //////////////////// edit the last edited too.
 
 exports.handleProposalReferences = async (event) => {
@@ -27,7 +30,7 @@ exports.handleProposalReferences = async (event) => {
         [tenantSnapshot, managementSnapshot, propertySnapshot, entitySnapshot] = await Promise.all([tenantSnapshot, managementSnapshot, propertySnapshot, entitySnapshot]);
         // get new reference list
         tenantSnapshot.forEach((doc) => {
-            const updatedReferenceList = doc.data().proposals.filter(ref => ref.id !== dataRef.id);
+            const updatedReferenceList = doc.data().proposals.filter(id => id !== dataRef.id);
             transaction.update(doc.ref, {
                 proposals: updatedReferenceList,
                 'metadata.fromFunction': true,
@@ -36,7 +39,7 @@ exports.handleProposalReferences = async (event) => {
         });
 
         managementSnapshot.forEach((doc) => {
-            const updatedReferenceList = doc.data().proposals.filter(ref => ref.id !== dataRef.id);
+            const updatedReferenceList = doc.data().proposals.filter(id => id !== dataRef.id);
             transaction.update(doc.ref, {
                 proposals: updatedReferenceList,
                 'metadata.fromFunction': true,
@@ -45,7 +48,7 @@ exports.handleProposalReferences = async (event) => {
         });
 
         propertySnapshot.forEach((doc) => {
-            const updatedReferenceList = doc.data().proposals.filter(ref => ref.id !== dataRef.id);
+            const updatedReferenceList = doc.data().proposals.filter(id => id !== dataRef.id);
             transaction.update(doc.ref, {
                 proposals: updatedReferenceList,
                 'metadata.fromFunction': true,
@@ -54,7 +57,7 @@ exports.handleProposalReferences = async (event) => {
         });
 
         entitySnapshot.forEach((doc) => {
-            const updatedReferenceList = doc.data().proposals.filter(ref => ref.id !== dataRef.id);
+            const updatedReferenceList = doc.data().proposals.filter(id => id !== dataRef.id);
             transaction.update(doc.ref, {
                 proposals: updatedReferenceList,
                 'metadata.fromFunction': true,
@@ -80,7 +83,7 @@ exports.handlePropertyReferences = async (event) => {
 
         // get new reference list
         querySnapshot.forEach((doc) => {
-            const updatedReferenceList = doc.data().propertys.filter(ref => ref.id !== dataRef.id);
+            const updatedReferenceList = doc.data().propertys.filter(id => id !== dataRef.id);
             transaction.update(doc.ref, {
                 propertys: updatedReferenceList,
                 'metadata.fromFunction': true,
@@ -109,7 +112,7 @@ exports.handleBuildingReferences = async (event) => {
         [propertySnapshot, entitySnapshot] = await Promise.all([propertySnapshot, entitySnapshot]);
         // get new reference list
         entitySnapshot.forEach((doc) => {
-            const updatedReferenceList = doc.data().buildings.filter(ref => ref.id !== dataRef.id);
+            const updatedReferenceList = doc.data().buildings.filter(id => id !== dataRef.id);
             transaction.update(doc.ref, {
                 buildings: updatedReferenceList,
                 'metadata.fromFunction': true,
@@ -118,7 +121,7 @@ exports.handleBuildingReferences = async (event) => {
         });
 
         propertySnapshot.forEach((doc) => {
-            const updatedReferenceList = doc.data().buildings.filter(ref => ref.id !== dataRef.id);
+            const updatedReferenceList = doc.data().buildings.filter(id => id !== dataRef.id);
             transaction.update(doc.ref, {
                 buildings: updatedReferenceList,
                 'metadata.fromFunction': true,

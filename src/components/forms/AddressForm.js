@@ -62,6 +62,23 @@ const inputObj = {
         relation: false,
         required: true,
     },
+    nameAddress: {
+        field: 'nameAddress',
+        label: 'Named Address',
+        formula: (obj) => {
+            return (
+                obj.address.value +
+                (obj.address.value&&', ') +
+                obj.city.value + 
+                (obj.city.value&&', ') +
+                obj.state.value +
+                (obj.state.value&&' ') +
+                obj.zip.value +
+                (obj.zip.value&&', ') +
+                'Unit ' + obj.unit.value
+                );
+        },
+    },
     fullAddress: {
         field: 'fullAddress',
         label: 'Full Address',
